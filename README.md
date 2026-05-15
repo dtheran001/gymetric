@@ -21,6 +21,7 @@ App personal para planificar rutinas de gimnasio, ejecutar sesiones guiadas y se
 - Editor de rutina con lista de ejercicios disponibles filtrada y scrollable.
 - Configuración de descanso por minutos y segundos.
 - Editor de rutina con ejercicios plegables y tipo de serie editable.
+- Drag & drop para reordenar ejercicios en el editor de rutinas.
 - Manejo del botón atrás en Android para cerrar flujos, volver a Hoy o salir con doble pulsación.
 - Ejecución de rutina con series, peso, repeticiones, tipo de serie y descanso.
 - Resumen final de entrenamiento con guardar o descartar.

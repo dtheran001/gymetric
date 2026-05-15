@@ -17,6 +17,8 @@ import {
   Vibration,
   View,
 } from 'react-native';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
 import { loadPersistedData, savePersistedData } from './data/storage';
@@ -82,9 +84,11 @@ const movementOptions: MovementFocus[] = ['none', 'concentric', 'eccentric', 'te
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <GymetricApp />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.gestureRoot}>
+      <SafeAreaProvider>
+        <GymetricApp />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -1666,6 +1670,10 @@ function RoutineEditorModal({
     });
   }
 
+  function reorderExercises(nextExercises: RoutineExercise[]) {
+    setDraft((current) => (current ? { ...current, exercises: nextExercises } : current));
+  }
+
   function removeExerciseFromRoutine(index: number) {
     setDraft((current) =>
       current ? { ...current, exercises: current.exercises.filter((_, itemIndex) => itemIndex !== index) } : current,
@@ -1775,82 +1783,99 @@ function RoutineEditorModal({
           </ScrollView>
 
           <Text style={styles.editorLabel}>Rutina</Text>
-          {draft.exercises.map((routineExercise, exerciseIndex) => {
-            const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
-            const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
-            return (
-              <View key={routineExercise.id} style={styles.routineEditorBlock}>
-                <View style={styles.routineEditorHeader}>
-                  <Pressable style={styles.headerTitle} onPress={() => toggleExerciseCollapsed(routineExercise.id)}>
-                    <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
-                    <Text style={styles.muted}>
-                      {routineExercise.sets.length} series · {isCollapsed ? 'Plegado' : 'Desplegado'}
-                    </Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
-                    <Text style={styles.smallSquareButtonText}>↑</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
-                    <Text style={styles.smallSquareButtonText}>↓</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
-                    <Text style={styles.smallSquareButtonText}>×</Text>
-                  </Pressable>
-                </View>
-                {!isCollapsed && (
-                  <>
-                    <RestTimeInput
-                      restSeconds={routineExercise.restSeconds}
-                      onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
-                    />
-                    <View style={styles.routineSetHeader}>
-                      <Text style={styles.routineSetIndexHeader}>Tipo</Text>
-                      <Text style={styles.routineSetColumnHeader}>Kg</Text>
-                      <Text style={styles.routineSetColumnHeader}>Reps</Text>
-                      <Text style={styles.routineSetActionHeader}>Del</Text>
-                    </View>
-                    {routineExercise.sets.map((set, setIndex) => (
-                      <View key={set.id} style={styles.routineSetEditorRow}>
-                        <Pressable style={styles.routineSetKindButton} onPress={() => updateSet(exerciseIndex, setIndex, { kind: getNextSetKind(set.kind) })}>
-                          <Text style={[styles.routineSetIndex, getSetKindTextStyle(set.kind)]}>
-                            {getSetKindLabel(set.kind, setIndex)}
-                          </Text>
-                        </Pressable>
-                        <TextInput
-                          keyboardType="decimal-pad"
-                          placeholder="Kg"
-                          placeholderTextColor="#7C8797"
-                          style={styles.routineSetInput}
-                          value={set.targetWeightKg.toString()}
-                          onChangeText={(targetWeightKg) =>
-                            updateSet(exerciseIndex, setIndex, {
-                              targetWeightKg: Number.parseFloat(targetWeightKg.replace(',', '.')) || 0,
-                            })
-                          }
-                        />
-                        <TextInput
-                          keyboardType="number-pad"
-                          placeholder="Reps"
-                          placeholderTextColor="#7C8797"
-                          style={styles.routineSetInput}
-                          value={set.targetReps.toString()}
-                          onChangeText={(targetReps) =>
-                            updateSet(exerciseIndex, setIndex, { targetReps: Number.parseInt(targetReps, 10) || 0 })
-                          }
-                        />
-                        <Pressable style={styles.smallSquareButton} onPress={() => removeRoutineSet(exerciseIndex, setIndex)}>
-                          <Text style={styles.smallSquareButtonText}>×</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-                    <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
-                      <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
+          <DraggableFlatList
+            activationDistance={10}
+            containerStyle={styles.draggableList}
+            data={draft.exercises}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            onDragEnd={({ data }) => reorderExercises(data)}
+            renderItem={({ item: routineExercise, drag, isActive, getIndex }: RenderItemParams<RoutineExercise>) => {
+              const exerciseIndex = getIndex() ?? 0;
+              const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
+              const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
+              return (
+                <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockActive]}>
+                  <View style={styles.routineEditorHeader}>
+                    <Pressable
+                      style={styles.dragHandle}
+                      onLongPress={drag}
+                      onPress={() => toggleExerciseCollapsed(routineExercise.id)}
+                    >
+                      <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
+                      <Text style={styles.muted}>
+                        Mantén pulsado para ordenar · {routineExercise.sets.length} series ·{' '}
+                        {isCollapsed ? 'Plegado' : 'Desplegado'}
+                      </Text>
                     </Pressable>
-                  </>
-                )}
-              </View>
-            );
-          })}
+                    <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
+                      <Text style={styles.smallSquareButtonText}>↑</Text>
+                    </Pressable>
+                    <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
+                      <Text style={styles.smallSquareButtonText}>↓</Text>
+                    </Pressable>
+                    <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
+                      <Text style={styles.smallSquareButtonText}>×</Text>
+                    </Pressable>
+                  </View>
+                  {!isCollapsed && (
+                    <>
+                      <RestTimeInput
+                        restSeconds={routineExercise.restSeconds}
+                        onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
+                      />
+                      <View style={styles.routineSetHeader}>
+                        <Text style={styles.routineSetIndexHeader}>Tipo</Text>
+                        <Text style={styles.routineSetColumnHeader}>Kg</Text>
+                        <Text style={styles.routineSetColumnHeader}>Reps</Text>
+                        <Text style={styles.routineSetActionHeader}>Del</Text>
+                      </View>
+                      {routineExercise.sets.map((set, setIndex) => (
+                        <View key={set.id} style={styles.routineSetEditorRow}>
+                          <Pressable
+                            style={styles.routineSetKindButton}
+                            onPress={() => updateSet(exerciseIndex, setIndex, { kind: getNextSetKind(set.kind) })}
+                          >
+                            <Text style={[styles.routineSetIndex, getSetKindTextStyle(set.kind)]}>
+                              {getSetKindLabel(set.kind, setIndex)}
+                            </Text>
+                          </Pressable>
+                          <TextInput
+                            keyboardType="decimal-pad"
+                            placeholder="Kg"
+                            placeholderTextColor="#7C8797"
+                            style={styles.routineSetInput}
+                            value={set.targetWeightKg.toString()}
+                            onChangeText={(targetWeightKg) =>
+                              updateSet(exerciseIndex, setIndex, {
+                                targetWeightKg: Number.parseFloat(targetWeightKg.replace(',', '.')) || 0,
+                              })
+                            }
+                          />
+                          <TextInput
+                            keyboardType="number-pad"
+                            placeholder="Reps"
+                            placeholderTextColor="#7C8797"
+                            style={styles.routineSetInput}
+                            value={set.targetReps.toString()}
+                            onChangeText={(targetReps) =>
+                              updateSet(exerciseIndex, setIndex, { targetReps: Number.parseInt(targetReps, 10) || 0 })
+                            }
+                          />
+                          <Pressable style={styles.smallSquareButton} onPress={() => removeRoutineSet(exerciseIndex, setIndex)}>
+                            <Text style={styles.smallSquareButtonText}>×</Text>
+                          </Pressable>
+                        </View>
+                      ))}
+                      <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
+                        <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              );
+            }}
+          />
 
           <View style={styles.modalActions}>
             <Pressable style={styles.modalSecondary} onPress={close}>
@@ -2049,6 +2074,9 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: '#101418',
+  },
+  gestureRoot: {
+    flex: 1,
   },
   loadingScreen: {
     flex: 1,
@@ -2682,10 +2710,20 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 10,
   },
+  routineEditorBlockActive: {
+    borderColor: '#7DD3C7',
+    backgroundColor: '#16242A',
+  },
+  draggableList: {
+    gap: 10,
+  },
   routineEditorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  dragHandle: {
+    flex: 1,
   },
   routineSetEditorRow: {
     minHeight: 48,
