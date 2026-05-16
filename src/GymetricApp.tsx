@@ -1744,153 +1744,158 @@ function RoutineEditorModal({
   return (
     <Modal transparent animationType="slide" visible onRequestClose={close}>
       <View style={styles.modalScrim}>
-        <ScrollView style={styles.editorCard} contentContainerStyle={styles.editorContent}>
-          <Text style={styles.modalTitle}>{draft.id ? 'Editar rutina' : 'Nueva rutina'}</Text>
-          <TextInput
-            placeholder="Nombre"
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.name}
-            onChangeText={(name) => setDraft((current) => (current ? { ...current, name } : current))}
-          />
-          <TextInput
-            placeholder="Foco de la rutina"
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.focus}
-            onChangeText={(focus) => setDraft((current) => (current ? { ...current, focus } : current))}
-          />
-          <Text style={styles.editorLabel}>Días sugeridos</Text>
-          <MultiOptionGrid
-            options={weekdayOptions}
-            labels={weekdayLabels}
-            value={draft.preferredDays}
-            onChange={(preferredDays) => setDraft((current) => (current ? { ...current, preferredDays } : current))}
-          />
+        <DraggableFlatList
+          activationDistance={1}
+          containerStyle={styles.editorCard}
+          contentContainerStyle={styles.editorContent}
+          data={draft.exercises}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            <>
+              <Text style={styles.modalTitle}>{draft.id ? 'Editar rutina' : 'Nueva rutina'}</Text>
+              <TextInput
+                placeholder="Nombre"
+                placeholderTextColor="#7C8797"
+                style={styles.editorInput}
+                value={draft.name}
+                onChangeText={(name) => setDraft((current) => (current ? { ...current, name } : current))}
+              />
+              <TextInput
+                placeholder="Foco de la rutina"
+                placeholderTextColor="#7C8797"
+                style={styles.editorInput}
+                value={draft.focus}
+                onChangeText={(focus) => setDraft((current) => (current ? { ...current, focus } : current))}
+              />
+              <Text style={styles.editorLabel}>Días sugeridos</Text>
+              <MultiOptionGrid
+                options={weekdayOptions}
+                labels={weekdayLabels}
+                value={draft.preferredDays}
+                onChange={(preferredDays) => setDraft((current) => (current ? { ...current, preferredDays } : current))}
+              />
 
-          <Text style={styles.editorLabel}>Añadir ejercicios</Text>
-          <Pressable style={styles.secondaryButton} onPress={openExerciseEditor}>
-            <Text style={styles.secondaryButtonText}>Crear ejercicio nuevo</Text>
-          </Pressable>
-          <ScrollView style={styles.exercisePicker} nestedScrollEnabled>
-            {availableExercises.map((exercise) => (
-              <Pressable key={exercise.id} style={styles.exercisePickRow} onPress={() => addExerciseToRoutine(exercise)}>
-                <Text style={styles.exercisePickName}>{exercise.name}</Text>
-                <Text style={styles.badge}>Añadir</Text>
+              <Text style={styles.editorLabel}>Añadir ejercicios</Text>
+              <Pressable style={styles.secondaryButton} onPress={openExerciseEditor}>
+                <Text style={styles.secondaryButtonText}>Crear ejercicio nuevo</Text>
               </Pressable>
-            ))}
-            {!availableExercises.length && <Text style={styles.emptyText}>Todos los ejercicios disponibles están añadidos.</Text>}
-          </ScrollView>
+              <ScrollView style={styles.exercisePicker} nestedScrollEnabled>
+                {availableExercises.map((exercise) => (
+                  <Pressable key={exercise.id} style={styles.exercisePickRow} onPress={() => addExerciseToRoutine(exercise)}>
+                    <Text style={styles.exercisePickName}>{exercise.name}</Text>
+                    <Text style={styles.badge}>Añadir</Text>
+                  </Pressable>
+                ))}
+                {!availableExercises.length && (
+                  <Text style={styles.emptyText}>Todos los ejercicios disponibles están añadidos.</Text>
+                )}
+              </ScrollView>
 
-          <Text style={styles.editorLabel}>Rutina</Text>
-          <DraggableFlatList
-            activationDistance={10}
-            containerStyle={styles.draggableList}
-            data={draft.exercises}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            onDragEnd={({ data }) => reorderExercises(data)}
-            renderItem={({ item: routineExercise, drag, isActive, getIndex }: RenderItemParams<RoutineExercise>) => {
-              const exerciseIndex = getIndex() ?? 0;
-              const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
-              const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
-              return (
-                <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockActive]}>
-                  <View style={styles.routineEditorHeader}>
-                    <Pressable
-                      style={styles.dragHandle}
-                      onLongPress={drag}
-                      onPress={() => toggleExerciseCollapsed(routineExercise.id)}
-                    >
-                      <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
-                      <Text style={styles.muted}>
-                        Mantén pulsado para ordenar · {routineExercise.sets.length} series ·{' '}
-                        {isCollapsed ? 'Plegado' : 'Desplegado'}
-                      </Text>
-                    </Pressable>
-                    <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
-                      <Text style={styles.smallSquareButtonText}>↑</Text>
-                    </Pressable>
-                    <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
-                      <Text style={styles.smallSquareButtonText}>↓</Text>
-                    </Pressable>
-                    <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
-                      <Text style={styles.smallSquareButtonText}>×</Text>
-                    </Pressable>
-                  </View>
-                  {!isCollapsed && (
-                    <>
-                      <RestTimeInput
-                        restSeconds={routineExercise.restSeconds}
-                        onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
-                      />
-                      <View style={styles.routineSetHeader}>
-                        <Text style={styles.routineSetIndexHeader}>Tipo</Text>
-                        <Text style={styles.routineSetColumnHeader}>Kg</Text>
-                        <Text style={styles.routineSetColumnHeader}>Reps</Text>
-                        <Text style={styles.routineSetActionHeader}>Del</Text>
-                      </View>
-                      {routineExercise.sets.map((set, setIndex) => (
-                        <View key={set.id} style={styles.routineSetEditorRow}>
-                          <Pressable
-                            style={styles.routineSetKindButton}
-                            onPress={() => updateSet(exerciseIndex, setIndex, { kind: getNextSetKind(set.kind) })}
-                          >
-                            <Text style={[styles.routineSetIndex, getSetKindTextStyle(set.kind)]}>
-                              {getSetKindLabel(set.kind, setIndex)}
-                            </Text>
-                          </Pressable>
-                          <TextInput
-                            keyboardType="decimal-pad"
-                            placeholder="Kg"
-                            placeholderTextColor="#7C8797"
-                            style={styles.routineSetInput}
-                            value={set.targetWeightKg.toString()}
-                            onChangeText={(targetWeightKg) =>
-                              updateSet(exerciseIndex, setIndex, {
-                                targetWeightKg: Number.parseFloat(targetWeightKg.replace(',', '.')) || 0,
-                              })
-                            }
-                          />
-                          <TextInput
-                            keyboardType="number-pad"
-                            placeholder="Reps"
-                            placeholderTextColor="#7C8797"
-                            style={styles.routineSetInput}
-                            value={set.targetReps.toString()}
-                            onChangeText={(targetReps) =>
-                              updateSet(exerciseIndex, setIndex, { targetReps: Number.parseInt(targetReps, 10) || 0 })
-                            }
-                          />
-                          <Pressable style={styles.smallSquareButton} onPress={() => removeRoutineSet(exerciseIndex, setIndex)}>
-                            <Text style={styles.smallSquareButtonText}>×</Text>
-                          </Pressable>
-                        </View>
-                      ))}
-                      <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
-                        <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
-                      </Pressable>
-                    </>
-                  )}
+              <Text style={styles.editorLabel}>Rutina</Text>
+            </>
+          }
+          ListFooterComponent={
+            <>
+              <View style={styles.modalActions}>
+                <Pressable style={styles.modalSecondary} onPress={close}>
+                  <Text style={styles.modalSecondaryText}>Cancelar</Text>
+                </Pressable>
+                <Pressable style={styles.modalPrimary} onPress={save}>
+                  <Text style={styles.modalPrimaryText}>Guardar</Text>
+                </Pressable>
+              </View>
+              {draft.id && (
+                <Pressable style={styles.fullWidthDanger} onPress={() => deleteRoutine(draft.id!)}>
+                  <Text style={styles.modalDangerText}>Eliminar rutina</Text>
+                </Pressable>
+              )}
+            </>
+          }
+          onDragEnd={({ data }) => reorderExercises(data)}
+          renderItem={({ item: routineExercise, drag, isActive, getIndex }: RenderItemParams<RoutineExercise>) => {
+            const exerciseIndex = getIndex() ?? 0;
+            const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
+            const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
+            return (
+              <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockActive]}>
+                <View style={styles.routineEditorHeader}>
+                  <Pressable style={styles.headerTitle} onPress={() => toggleExerciseCollapsed(routineExercise.id)}>
+                    <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
+                    <Text style={styles.muted}>
+                      {routineExercise.sets.length} series · {isCollapsed ? 'Plegado' : 'Desplegado'}
+                    </Text>
+                  </Pressable>
+                  <Pressable style={styles.dragHandle} onPressIn={drag}>
+                    <Text style={styles.dragHandleText}>≡</Text>
+                  </Pressable>
+                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
+                    <Text style={styles.smallSquareButtonText}>↑</Text>
+                  </Pressable>
+                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
+                    <Text style={styles.smallSquareButtonText}>↓</Text>
+                  </Pressable>
+                  <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
+                    <Text style={styles.smallSquareButtonText}>×</Text>
+                  </Pressable>
                 </View>
-              );
-            }}
-          />
-
-          <View style={styles.modalActions}>
-            <Pressable style={styles.modalSecondary} onPress={close}>
-              <Text style={styles.modalSecondaryText}>Cancelar</Text>
-            </Pressable>
-            <Pressable style={styles.modalPrimary} onPress={save}>
-              <Text style={styles.modalPrimaryText}>Guardar</Text>
-            </Pressable>
-          </View>
-          {draft.id && (
-            <Pressable style={styles.fullWidthDanger} onPress={() => deleteRoutine(draft.id!)}>
-              <Text style={styles.modalDangerText}>Eliminar rutina</Text>
-            </Pressable>
-          )}
-        </ScrollView>
+                {!isCollapsed && (
+                  <>
+                    <RestTimeInput
+                      restSeconds={routineExercise.restSeconds}
+                      onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
+                    />
+                    <View style={styles.routineSetHeader}>
+                      <Text style={styles.routineSetIndexHeader}>Tipo</Text>
+                      <Text style={styles.routineSetColumnHeader}>Kg</Text>
+                      <Text style={styles.routineSetColumnHeader}>Reps</Text>
+                      <Text style={styles.routineSetActionHeader}>Del</Text>
+                    </View>
+                    {routineExercise.sets.map((set, setIndex) => (
+                      <View key={set.id} style={styles.routineSetEditorRow}>
+                        <Pressable
+                          style={styles.routineSetKindButton}
+                          onPress={() => updateSet(exerciseIndex, setIndex, { kind: getNextSetKind(set.kind) })}
+                        >
+                          <Text style={[styles.routineSetIndex, getSetKindTextStyle(set.kind)]}>
+                            {getSetKindLabel(set.kind, setIndex)}
+                          </Text>
+                        </Pressable>
+                        <TextInput
+                          keyboardType="decimal-pad"
+                          placeholder="Kg"
+                          placeholderTextColor="#7C8797"
+                          style={styles.routineSetInput}
+                          value={set.targetWeightKg.toString()}
+                          onChangeText={(targetWeightKg) =>
+                            updateSet(exerciseIndex, setIndex, {
+                              targetWeightKg: Number.parseFloat(targetWeightKg.replace(',', '.')) || 0,
+                            })
+                          }
+                        />
+                        <TextInput
+                          keyboardType="number-pad"
+                          placeholder="Reps"
+                          placeholderTextColor="#7C8797"
+                          style={styles.routineSetInput}
+                          value={set.targetReps.toString()}
+                          onChangeText={(targetReps) =>
+                            updateSet(exerciseIndex, setIndex, { targetReps: Number.parseInt(targetReps, 10) || 0 })
+                          }
+                        />
+                        <Pressable style={styles.smallSquareButton} onPress={() => removeRoutineSet(exerciseIndex, setIndex)}>
+                          <Text style={styles.smallSquareButtonText}>×</Text>
+                        </Pressable>
+                      </View>
+                    ))}
+                    <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
+                      <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
+            );
+          }}
+        />
       </View>
     </Modal>
   );
@@ -2714,16 +2719,23 @@ const styles = StyleSheet.create({
     borderColor: '#7DD3C7',
     backgroundColor: '#16242A',
   },
-  draggableList: {
-    gap: 10,
-  },
   routineEditorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   dragHandle: {
-    flex: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#222D35',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dragHandleText: {
+    color: '#7DD3C7',
+    fontSize: 22,
+    fontWeight: '900',
   },
   routineSetEditorRow: {
     minHeight: 48,
