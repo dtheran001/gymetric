@@ -35,7 +35,15 @@ import {
   SetLog,
   Weekday,
 } from './domain/types';
+import { MultiOptionGrid, OptionGrid, RestTimeInput } from './ui/FormControls';
 import { equipmentLabels, gripLabels, movementLabels, muscleLabels, weekdayLabels } from './ui/labels';
+import {
+  estimateRoutineMinutes,
+  getNextSetKind,
+  getSetKindLabel,
+  getTodayWeekday,
+  weekdayOptions,
+} from './workout/routineUtils';
 import { ActiveWorkout, ActualSetInput, SetEditorTarget, Tab, WorkoutSummary, WorkoutView } from './workout/sessionTypes';
 
 Notifications.setNotificationHandler({
@@ -71,34 +79,6 @@ const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arm
 const equipmentOptions: EquipmentKind[] = ['machine', 'free_weight', 'barbell', 'dumbbell', 'cable', 'bodyweight', 'other'];
 const gripOptions: GripKind[] = ['none', 'prone', 'supine', 'neutral', 'mixed'];
 const movementOptions: MovementFocus[] = ['none', 'concentric', 'eccentric', 'tempo'];
-const weekdayOptions: Weekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-function getTodayWeekday(): Weekday {
-  const day = new Date().getDay();
-  return weekdayOptions[day === 0 ? 6 : day - 1];
-}
-
-function estimateRoutineMinutes(exercises: RoutineExercise[]) {
-  const totalRestSeconds = exercises.reduce(
-    (total, exercise) => total + exercise.restSeconds * Math.max(exercise.sets.length - 1, 0),
-    0,
-  );
-  const activeSeconds = exercises.reduce((total, exercise) => total + exercise.sets.length * 45, 0);
-  return Math.max(Math.round((totalRestSeconds + activeSeconds) / 60), 1);
-}
-
-function splitRestTime(totalSeconds: number) {
-  return {
-    minutes: Math.floor(totalSeconds / 60).toString(),
-    seconds: (totalSeconds % 60).toString(),
-  };
-}
-
-function combineRestTime(minutes: string, seconds: string) {
-  const parsedMinutes = Number.parseInt(minutes, 10);
-  const parsedSeconds = Number.parseInt(seconds, 10);
-  return Math.max((Number.isFinite(parsedMinutes) ? parsedMinutes : 0) * 60 + (Number.isFinite(parsedSeconds) ? parsedSeconds : 0), 0);
-}
 
 export default function App() {
   return (
@@ -1364,32 +1344,6 @@ function WorkoutStats({ activeWorkout }: { activeWorkout: ActiveWorkout }) {
   );
 }
 
-function getSetKindLabel(kind: SetKind, setIndex: number) {
-  if (kind === 'drop') {
-    return 'D';
-  }
-  if (kind === 'failure') {
-    return 'F';
-  }
-  if (kind === 'warmup') {
-    return 'W';
-  }
-  return (setIndex + 1).toString();
-}
-
-function getNextSetKind(kind: SetKind): SetKind {
-  if (kind === 'normal') {
-    return 'warmup';
-  }
-  if (kind === 'warmup') {
-    return 'failure';
-  }
-  if (kind === 'failure') {
-    return 'drop';
-  }
-  return 'normal';
-}
-
 function getSetKindTextStyle(kind: SetKind) {
   if (kind === 'drop') {
     return styles.dropSetKind;
@@ -2066,95 +2020,6 @@ function ExerciseRow({ exercise }: { exercise: Exercise }) {
   );
 }
 
-function OptionGrid<T extends string>({
-  labels,
-  onChange,
-  options,
-  value,
-}: {
-  labels: Record<T, string>;
-  onChange: (value: T) => void;
-  options: T[];
-  value: T;
-}) {
-  return (
-    <View style={styles.optionGrid}>
-      {options.map((option) => (
-        <Pressable
-          key={option}
-          style={[styles.optionChip, value === option && styles.optionChipActive]}
-          onPress={() => onChange(option)}
-        >
-          <Text style={[styles.optionChipText, value === option && styles.optionChipTextActive]}>{labels[option]}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-function RestTimeInput({ onChange, restSeconds }: { onChange: (seconds: number) => void; restSeconds: number }) {
-  const split = splitRestTime(restSeconds);
-
-  return (
-    <View>
-      <Text style={styles.editorLabel}>Descanso</Text>
-      <View style={styles.restEditorRow}>
-        <View style={styles.restEditorField}>
-          <TextInput
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor="#7C8797"
-            style={styles.restEditorInput}
-            value={split.minutes}
-            onChangeText={(minutes) => onChange(combineRestTime(minutes, split.seconds))}
-          />
-          <Text style={styles.restEditorLabel}>min</Text>
-        </View>
-        <View style={styles.restEditorField}>
-          <TextInput
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor="#7C8797"
-            style={styles.restEditorInput}
-            value={split.seconds}
-            onChangeText={(seconds) => onChange(combineRestTime(split.minutes, seconds))}
-          />
-          <Text style={styles.restEditorLabel}>seg</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function MultiOptionGrid<T extends string>({
-  labels,
-  onChange,
-  options,
-  value,
-}: {
-  labels: Record<T, string>;
-  onChange: (value: T[]) => void;
-  options: T[];
-  value: T[];
-}) {
-  return (
-    <View style={styles.optionGrid}>
-      {options.map((option) => {
-        const active = value.includes(option);
-        return (
-          <Pressable
-            key={option}
-            style={[styles.optionChip, active && styles.optionChipActive]}
-            onPress={() => onChange(active ? value.filter((item) => item !== option) : [...value, option])}
-          >
-            <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{labels[option]}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metric}>
@@ -2784,33 +2649,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     textAlignVertical: 'top',
   },
-  optionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionChip: {
-    minHeight: 38,
-    borderRadius: 8,
-    backgroundColor: '#222D35',
-    borderWidth: 1,
-    borderColor: '#31404A',
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionChipActive: {
-    backgroundColor: '#7DD3C7',
-    borderColor: '#7DD3C7',
-  },
-  optionChipText: {
-    color: '#D7E0E7',
-    fontWeight: '900',
-    fontSize: 12,
-  },
-  optionChipTextActive: {
-    color: '#071313',
-  },
   exercisePicker: {
     maxHeight: 220,
     borderRadius: 8,
@@ -2835,31 +2673,6 @@ const styles = StyleSheet.create({
     color: '#9BA8B4',
     padding: 14,
     fontWeight: '700',
-  },
-  restEditorRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  restEditorField: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#34444F',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  restEditorInput: {
-    flex: 1,
-    color: '#F7FAFC',
-    fontSize: 18,
-    fontWeight: '900',
-    paddingVertical: 0,
-  },
-  restEditorLabel: {
-    color: '#9BA8B4',
-    fontWeight: '900',
   },
   routineEditorBlock: {
     borderRadius: 8,
