@@ -68,3 +68,29 @@ export type Achievement = {
   description: string;
   earnedAt: string;
 };
+
+export type BodyProfile = {
+  id: string;
+  heightCm: number;
+  age: number;
+  sex?: 'male' | 'female';
+  updatedAt: string;
+};
+
+export type BodyMeasurement = {
+  id: string;
+  measuredAt: string;
+  weightKg: number;
+  bodyFatPct: number;
+  musclePct: number;
+  bonePct: number;
+  waterPct: number;
+};
+
+export type ProgressPhoto = {
+  id: string;
+  uri: string;
+  capturedAt: string;
+  measurementId?: string;
+  measurementDate?: string;
+};
