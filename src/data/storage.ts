@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Achievement, Exercise, Routine, SetLog } from '../domain/types';
+import { Achievement, BodyMeasurement, BodyProfile, Exercise, ProgressPhoto, Routine, SetLog } from '../domain/types';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './seed';
 
 type StoredRow = {
@@ -16,6 +16,9 @@ export type PersistedData = {
   routines: Routine[];
   logs: SetLog[];
   achievements: Achievement[];
+  bodyProfile: BodyProfile | null;
+  bodyMeasurements: BodyMeasurement[];
+  progressPhotos: ProgressPhoto[];
 };
 
 const DATABASE_NAME = 'gymetric.db';
@@ -63,6 +66,27 @@ async function openAndPrepareDatabase() {
     )
   `);
   await db.runAsync(`
+    CREATE TABLE IF NOT EXISTS body_profile (
+      id TEXT PRIMARY KEY NOT NULL,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await db.runAsync(`
+    CREATE TABLE IF NOT EXISTS body_measurements (
+      id TEXT PRIMARY KEY NOT NULL,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await db.runAsync(`
+    CREATE TABLE IF NOT EXISTS progress_photos (
+      id TEXT PRIMARY KEY NOT NULL,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await db.runAsync(`
     CREATE TABLE IF NOT EXISTS app_meta (
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
@@ -104,6 +128,8 @@ async function seedDatabase(db: SQLite.SQLiteDatabase) {
     await replaceTableInTransaction(txn, 'routines', seedRoutines, now);
     await replaceTableInTransaction(txn, 'set_logs', seedLogs, now);
     await replaceTableInTransaction(txn, 'achievements', seedAchievements, now);
+    await replaceTableInTransaction(txn, 'body_measurements', [], now);
+    await replaceTableInTransaction(txn, 'progress_photos', [], now);
     await txn.runAsync('INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)', 'seeded', 'true');
   });
 }
@@ -121,6 +147,9 @@ export async function loadPersistedData(): Promise<PersistedData> {
     routines: await loadTable<Routine>(db, 'routines'),
     logs: await loadTable<SetLog>(db, 'set_logs'),
     achievements: await loadTable<Achievement>(db, 'achievements'),
+    bodyProfile: (await loadTable<BodyProfile>(db, 'body_profile'))[0] ?? null,
+    bodyMeasurements: await loadTable<BodyMeasurement>(db, 'body_measurements'),
+    progressPhotos: await loadTable<ProgressPhoto>(db, 'progress_photos'),
   };
 
   if (data.routines.length > 0 && data.exercises.length === 0) {
@@ -138,6 +167,9 @@ export async function savePersistedData(data: PersistedData) {
     routines: [...data.routines],
     logs: [...data.logs],
     achievements: [...data.achievements],
+    bodyProfile: data.bodyProfile ? { ...data.bodyProfile } : null,
+    bodyMeasurements: [...data.bodyMeasurements],
+    progressPhotos: [...data.progressPhotos],
   };
 
   saveQueue = saveQueue
@@ -157,6 +189,9 @@ async function writePersistedData(data: PersistedData) {
     await replaceTableInTransaction(txn, 'routines', data.routines, now);
     await replaceTableInTransaction(txn, 'set_logs', data.logs, now);
     await replaceTableInTransaction(txn, 'achievements', data.achievements, now);
+    await replaceTableInTransaction(txn, 'body_profile', data.bodyProfile ? [data.bodyProfile] : [], now);
+    await replaceTableInTransaction(txn, 'body_measurements', data.bodyMeasurements, now);
+    await replaceTableInTransaction(txn, 'progress_photos', data.progressPhotos, now);
     await txn.runAsync('INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)', 'seeded', 'true');
   });
 }

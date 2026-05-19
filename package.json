@@ -7,11 +7,18 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:android:preview": "eas build -p android --profile preview",
-    "build:android:production": "eas build -p android --profile production"
+    "dev-client": "expo start --dev-client",
+    "build:android:development": "npx eas-cli build -p android --profile development",
+    "build:android:preview": "npx eas-cli build -p android --profile preview",
+    "build:android:production": "npx eas-cli build -p android --profile production"
   },
   "dependencies": {
     "expo": "~54.0.0",
+    "expo-dev-client": "~6.0.21",
+    "expo-file-system": "~19.0.22",
+    "expo-image-picker": "~17.0.11",
+    "expo-media-library": "~18.2.1",
+    "expo-navigation-bar": "~5.0.10",
     "expo-notifications": "~0.32.17",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",

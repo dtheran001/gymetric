@@ -1,3 +1,7 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
+import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
@@ -5,6 +9,7 @@ import {
   Alert,
   AppState,
   BackHandler,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -21,15 +26,29 @@ import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flat
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
-import { loadPersistedData, savePersistedData } from './data/storage';
+import { loadPersistedData, PersistedData, savePersistedData } from './data/storage';
+import {
+  calculateBmi,
+  estimateHeightForBmi,
+  formatMeasurementDate,
+  getBmiSummary,
+  getBodyFatSummary,
+  getBoneSummary,
+  getLatestMeasurement,
+  getMuscleSummary,
+  getWaterSummary,
+} from './domain/bodyProgress';
 import { buildAchievement, formatRestTime, getPersonalBest } from './domain/progress';
 import {
   Achievement,
+  BodyMeasurement,
+  BodyProfile,
   EquipmentKind,
   Exercise,
   GripKind,
   MovementFocus,
   MuscleGroup,
+  ProgressPhoto,
   Routine,
   RoutineExercise,
   RoutineSet,
@@ -77,6 +96,20 @@ type RoutineDraft = {
   exercises: RoutineExercise[];
 };
 
+type BodyProfileDraft = {
+  heightCm: string;
+  age: string;
+  sex: 'male' | 'female';
+};
+
+type BodyMeasurementDraft = {
+  weightKg: string;
+  bodyFatPct: string;
+  musclePct: string;
+  bonePct: string;
+  waterPct: string;
+};
+
 const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
 const equipmentOptions: EquipmentKind[] = ['machine', 'free_weight', 'barbell', 'dumbbell', 'cable', 'bodyweight', 'other'];
 const gripOptions: GripKind[] = ['none', 'prone', 'supine', 'neutral', 'mixed'];
@@ -99,11 +132,17 @@ function GymetricApp() {
   const [routines, setRoutines] = useState(seedRoutines);
   const [logs, setLogs] = useState(seedLogs);
   const [achievements, setAchievements] = useState(seedAchievements);
+  const [bodyProfile, setBodyProfile] = useState<BodyProfile | null>(null);
+  const [bodyMeasurements, setBodyMeasurements] = useState<BodyMeasurement[]>([]);
+  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkout | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [setEditorTarget, setSetEditorTarget] = useState<SetEditorTarget>(null);
   const [exerciseDraft, setExerciseDraft] = useState<ExerciseDraft | null>(null);
   const [routineDraft, setRoutineDraft] = useState<RoutineDraft | null>(null);
+  const [bodyProfileDraft, setBodyProfileDraft] = useState<BodyProfileDraft | null>(null);
+  const [bodyMeasurementDraft, setBodyMeasurementDraft] = useState<BodyMeasurementDraft | null>(null);
+  const [selectedProgressPhoto, setSelectedProgressPhoto] = useState<ProgressPhoto | null>(null);
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutSummary | null>(null);
   const [lastBackPressAt, setLastBackPressAt] = useState(0);
   const [isStorageReady, setIsStorageReady] = useState(false);
@@ -115,9 +154,33 @@ function GymetricApp() {
   const totalSetsLogged = logs.length;
   const latestAchievement = achievements[0];
 
+  function buildPersistedData(overrides: Partial<PersistedData> = {}): PersistedData {
+    return {
+      exercises,
+      routines,
+      logs,
+      achievements,
+      bodyProfile,
+      bodyMeasurements,
+      progressPhotos,
+      ...overrides,
+    };
+  }
+
+  function persistData(overrides: Partial<PersistedData> = {}) {
+    savePersistedData(buildPersistedData(overrides))
+      .then(() => setStorageError(null))
+      .catch((error: unknown) => {
+        setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
+      });
+  }
+
   useEffect(() => {
     Notifications.requestPermissionsAsync();
     if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#0B1115').catch(() => {});
+      NavigationBar.setBorderColorAsync('#0B1115').catch(() => {});
+      NavigationBar.setButtonStyleAsync('light').catch(() => {});
       Notifications.setNotificationChannelAsync('rest-timer', {
         name: 'Descansos',
         importance: Notifications.AndroidImportance.HIGH,
@@ -139,6 +202,9 @@ function GymetricApp() {
         setRoutines(data.routines);
         setLogs(data.logs);
         setAchievements(data.achievements);
+        setBodyProfile(data.bodyProfile);
+        setBodyMeasurements(data.bodyMeasurements);
+        setProgressPhotos(data.progressPhotos);
         setStorageError(null);
         setIsStorageReady(true);
       })
@@ -160,12 +226,12 @@ function GymetricApp() {
       return;
     }
 
-    savePersistedData({ exercises, routines, logs, achievements })
+    savePersistedData(buildPersistedData())
       .then(() => setStorageError(null))
       .catch((error: unknown) => {
         setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
       });
-  }, [achievements, exercises, isStorageReady, logs, routines]);
+  }, [achievements, bodyMeasurements, bodyProfile, exercises, isStorageReady, logs, progressPhotos, routines]);
 
   useEffect(() => {
     if (!activeWorkout?.isResting || !activeWorkout.restEndsAt) {
@@ -218,6 +284,18 @@ function GymetricApp() {
         setRoutineDraft(null);
         return true;
       }
+      if (bodyMeasurementDraft) {
+        setBodyMeasurementDraft(null);
+        return true;
+      }
+      if (bodyProfileDraft) {
+        setBodyProfileDraft(null);
+        return true;
+      }
+      if (selectedProgressPhoto) {
+        setSelectedProgressPhoto(null);
+        return true;
+      }
       if (tab !== 'today') {
         setTab('today');
         return true;
@@ -234,7 +312,17 @@ function GymetricApp() {
     });
 
     return () => subscription.remove();
-  }, [exerciseDraft, lastBackPressAt, routineDraft, setEditorTarget, showFinishConfirm, tab]);
+  }, [
+    bodyMeasurementDraft,
+    bodyProfileDraft,
+    exerciseDraft,
+    lastBackPressAt,
+    routineDraft,
+    selectedProgressPhoto,
+    setEditorTarget,
+    showFinishConfirm,
+    tab,
+  ]);
 
   function getSetKey(routine: Routine, exerciseIndex: number, setIndex: number) {
     const routineExercise = routine.exercises[exerciseIndex];
@@ -721,9 +809,7 @@ function GymetricApp() {
       : [exercise, ...exercises];
 
     setExercises(nextExercises);
-    savePersistedData({ exercises: nextExercises, routines, logs, achievements }).catch((error: unknown) => {
-      setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
-    });
+    persistData({ exercises: nextExercises });
     setExerciseDraft(null);
   }
 
@@ -751,14 +837,7 @@ function GymetricApp() {
     );
     setLogs(nextLogs);
     setAchievements(nextAchievements);
-    savePersistedData({
-      exercises: nextExercises,
-      routines: nextRoutines,
-      logs: nextLogs,
-      achievements: nextAchievements,
-    }).catch((error: unknown) => {
-      setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
-    });
+    persistData({ exercises: nextExercises, routines: nextRoutines, logs: nextLogs, achievements: nextAchievements });
     setExerciseDraft(null);
   }
 
@@ -794,9 +873,7 @@ function GymetricApp() {
       : [routine, ...routines];
 
     setRoutines(nextRoutines);
-    savePersistedData({ exercises, routines: nextRoutines, logs, achievements }).catch((error: unknown) => {
-      setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
-    });
+    persistData({ routines: nextRoutines });
     setRoutineDraft(null);
   }
 
@@ -806,9 +883,7 @@ function GymetricApp() {
 
     setRoutines(nextRoutines);
     setLogs(nextLogs);
-    savePersistedData({ exercises, routines: nextRoutines, logs: nextLogs, achievements }).catch((error: unknown) => {
-      setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
-    });
+    persistData({ routines: nextRoutines, logs: nextLogs });
     setRoutineDraft(null);
   }
 
@@ -825,16 +900,164 @@ function GymetricApp() {
     setRoutines(nextRoutines);
     setLogs(nextLogs);
     setAchievements(nextAchievements);
-    savePersistedData({ exercises, routines: nextRoutines, logs: nextLogs, achievements: nextAchievements }).catch(
-      (error: unknown) => {
-        setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
-      },
-    );
+    persistData({ routines: nextRoutines, logs: nextLogs, achievements: nextAchievements });
     setWorkoutSummary(null);
   }
 
   function discardWorkoutSummary() {
     setWorkoutSummary(null);
+  }
+
+  function openBodyProfileEditor() {
+    setBodyProfileDraft({
+      heightCm: bodyProfile?.heightCm ? bodyProfile.heightCm.toString() : '',
+      age: bodyProfile?.age ? bodyProfile.age.toString() : '',
+      sex: bodyProfile?.sex ?? 'male',
+    });
+  }
+
+  function openBodyMeasurementEditor() {
+    setBodyMeasurementDraft({
+      weightKg: '',
+      bodyFatPct: '',
+      musclePct: '',
+      bonePct: '',
+      waterPct: '',
+    });
+  }
+
+  function saveBodyProfileDraft() {
+    if (!bodyProfileDraft) {
+      return;
+    }
+
+    const heightCm = Number.parseFloat(bodyProfileDraft.heightCm.replace(',', '.')) || 0;
+    const age = Number.parseInt(bodyProfileDraft.age, 10) || 0;
+
+    if (!heightCm || !age) {
+      return;
+    }
+
+    const nextProfile: BodyProfile = {
+      id: 'body-profile',
+      heightCm,
+      age,
+      sex: bodyProfileDraft.sex,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setBodyProfile(nextProfile);
+    persistData({ bodyProfile: nextProfile });
+    setBodyProfileDraft(null);
+  }
+
+  function saveBodyMeasurementDraft() {
+    if (!bodyMeasurementDraft) {
+      return;
+    }
+
+    const measurement: BodyMeasurement = {
+      id: `body-${Date.now()}`,
+      measuredAt: new Date().toISOString(),
+      weightKg: Number.parseFloat(bodyMeasurementDraft.weightKg.replace(',', '.')) || 0,
+      bodyFatPct: Number.parseFloat(bodyMeasurementDraft.bodyFatPct.replace(',', '.')) || 0,
+      musclePct: Number.parseFloat(bodyMeasurementDraft.musclePct.replace(',', '.')) || 0,
+      bonePct: Number.parseFloat(bodyMeasurementDraft.bonePct.replace(',', '.')) || 0,
+      waterPct: Number.parseFloat(bodyMeasurementDraft.waterPct.replace(',', '.')) || 0,
+    };
+
+    if (!measurement.weightKg) {
+      return;
+    }
+
+    const nextMeasurements = [measurement, ...bodyMeasurements];
+    setBodyMeasurements(nextMeasurements);
+    persistData({ bodyMeasurements: nextMeasurements });
+    setBodyMeasurementDraft(null);
+  }
+
+  function deleteBodyMeasurement(measurementId: string) {
+    const nextMeasurements = bodyMeasurements.filter((measurement) => measurement.id !== measurementId);
+    setBodyMeasurements(nextMeasurements);
+    persistData({ bodyMeasurements: nextMeasurements });
+  }
+
+  async function addProgressPhoto() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setStorageError('Necesito permiso para acceder a tus fotos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+
+    if (result.canceled || !result.assets[0]?.uri) {
+      return;
+    }
+
+    const photoId = `photo-${Date.now()}`;
+    const linkedMeasurement = getLatestMeasurement(bodyMeasurements);
+    const groupDate = linkedMeasurement?.measuredAt ?? new Date().toISOString();
+    const folderName = groupDate.slice(0, 10);
+    const folder = `${FileSystem.documentDirectory}progress-photos/${folderName}`;
+    const extension = result.assets[0].uri.split('.').pop()?.split('?')[0] || 'jpg';
+    const destination = `${folder}/${photoId}.${extension}`;
+
+    await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
+    await FileSystem.copyAsync({ from: result.assets[0].uri, to: destination });
+
+    const nextPhoto: ProgressPhoto = {
+      id: photoId,
+      uri: destination,
+      capturedAt: new Date().toISOString(),
+      measurementId: linkedMeasurement?.id,
+      measurementDate: linkedMeasurement?.measuredAt,
+    };
+    const nextPhotos = [nextPhoto, ...progressPhotos];
+    setProgressPhotos(nextPhotos);
+    persistData({ progressPhotos: nextPhotos });
+  }
+
+  async function deleteProgressPhoto(photoId: string) {
+    const photo = progressPhotos.find((item) => item.id === photoId);
+    const nextPhotos = progressPhotos.filter((item) => item.id !== photoId);
+    setProgressPhotos(nextPhotos);
+    persistData({ progressPhotos: nextPhotos });
+    if (photo?.uri) {
+      await FileSystem.deleteAsync(photo.uri, { idempotent: true });
+    }
+  }
+
+  async function saveProgressPhotoToGallery(photo: ProgressPhoto) {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(photo.uri);
+      if (!fileInfo.exists) {
+        throw new Error('No encuentro el archivo original de la foto.');
+      }
+
+      const permission = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
+      if (!permission.granted) {
+        throw new Error('Necesito permiso para guardar la foto en la galeria.');
+      }
+
+      const asset = await MediaLibrary.createAssetAsync(photo.uri);
+      const album = await MediaLibrary.getAlbumAsync('Gymetric');
+      if (album) {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      } else {
+        await MediaLibrary.createAlbumAsync('Gymetric', asset, false);
+      }
+
+      ToastAndroid.show('Foto guardada en la galeria', ToastAndroid.SHORT);
+      setStorageError(null);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'No se pudo guardar la foto en la galeria.';
+      setStorageError(message);
+      ToastAndroid.show(message, ToastAndroid.LONG);
+    }
   }
 
   function applySummaryToRoutine(summary: WorkoutSummary) {
@@ -958,7 +1181,20 @@ function GymetricApp() {
         )}
 
         {tab === 'progress' && (
-          <ProgressScreen achievements={achievements} exercises={exercises} logs={logs} />
+          <ProgressScreen
+            achievements={achievements}
+            addProgressPhoto={addProgressPhoto}
+            bodyMeasurements={bodyMeasurements}
+            bodyProfile={bodyProfile}
+            deleteBodyMeasurement={deleteBodyMeasurement}
+            deleteProgressPhoto={deleteProgressPhoto}
+            exercises={exercises}
+            logs={logs}
+            openBodyMeasurementEditor={openBodyMeasurementEditor}
+            openBodyProfileEditor={openBodyProfileEditor}
+            openProgressPhoto={setSelectedProgressPhoto}
+            progressPhotos={progressPhotos}
+          />
         )}
       </ScrollView>
 
@@ -1035,6 +1271,27 @@ function GymetricApp() {
         summary={workoutSummary}
         discard={discardWorkoutSummary}
         save={saveWorkoutSummary}
+      />
+
+      <BodyProfileModal
+        draft={bodyProfileDraft}
+        setDraft={setBodyProfileDraft}
+        close={() => setBodyProfileDraft(null)}
+        save={saveBodyProfileDraft}
+      />
+
+      <BodyMeasurementModal
+        draft={bodyMeasurementDraft}
+        setDraft={setBodyMeasurementDraft}
+        close={() => setBodyMeasurementDraft(null)}
+        save={saveBodyMeasurementDraft}
+      />
+
+      <ProgressPhotoViewer
+        close={() => setSelectedProgressPhoto(null)}
+        deletePhoto={deleteProgressPhoto}
+        photo={selectedProgressPhoto}
+        saveToGallery={saveProgressPhotoToGallery}
       />
     </KeyboardAvoidingView>
   );
@@ -1972,15 +2229,194 @@ function WorkoutSummaryModal({
 
 function ProgressScreen({
   achievements,
+  addProgressPhoto,
+  bodyMeasurements,
+  bodyProfile,
+  deleteBodyMeasurement,
+  deleteProgressPhoto,
   exercises,
   logs,
+  openBodyMeasurementEditor,
+  openBodyProfileEditor,
+  openProgressPhoto,
+  progressPhotos,
 }: {
   achievements: Achievement[];
+  addProgressPhoto: () => void;
+  bodyMeasurements: BodyMeasurement[];
+  bodyProfile: BodyProfile | null;
+  deleteBodyMeasurement: (measurementId: string) => void;
+  deleteProgressPhoto: (photoId: string) => void;
   exercises: Exercise[];
   logs: SetLog[];
+  openBodyMeasurementEditor: () => void;
+  openBodyProfileEditor: () => void;
+  openProgressPhoto: (photo: ProgressPhoto) => void;
+  progressPhotos: ProgressPhoto[];
 }) {
+  const [openPhotoGroupKey, setOpenPhotoGroupKey] = useState<string | null>(null);
+  const latestMeasurement = getLatestMeasurement(bodyMeasurements);
+  const bmi = calculateBmi(bodyProfile, latestMeasurement);
+  const bmiSummary = getBmiSummary(bmi);
+  const bodySex = bodyProfile?.sex ?? 'male';
+  const referenceHeight = latestMeasurement ? estimateHeightForBmi(latestMeasurement.weightKg, 23.7) : null;
+  const weightHistory = [...bodyMeasurements].sort((a, b) => Date.parse(a.measuredAt) - Date.parse(b.measuredAt));
+  const photoGroups = groupProgressPhotos(progressPhotos, bodyMeasurements);
+
   return (
     <View style={styles.stack}>
+      <View style={styles.heroPanel}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.eyebrow}>Progreso corporal</Text>
+            <Text style={styles.h2}>Datos que si importan</Text>
+          </View>
+          <Pressable style={styles.iconButton} onPress={openBodyProfileEditor}>
+            <Text style={styles.iconButtonText}>Perfil</Text>
+          </Pressable>
+        </View>
+        <View style={styles.bodyProfileRow}>
+          <Metric label="Altura" value={bodyProfile?.heightCm ? `${bodyProfile.heightCm} cm` : '--'} />
+          <Metric label="Edad" value={bodyProfile?.age ? `${bodyProfile.age}` : '--'} />
+          <Metric label="Sexo" value={bodySex === 'female' ? 'Mujer' : 'Hombre'} />
+          <Metric label="Mediciones" value={bodyMeasurements.length.toString()} />
+        </View>
+        <Pressable style={styles.primaryButton} onPress={openBodyMeasurementEditor}>
+          <Text style={styles.primaryButtonText}>Registrar medicion</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.panel}>
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionLabel}>Peso</Text>
+          <Text style={styles.muted}>{latestMeasurement ? formatMeasurementDate(latestMeasurement.measuredAt) : 'Sin mediciones'}</Text>
+        </View>
+        <View style={styles.weightSummaryRow}>
+          <View>
+            <Text style={styles.bigMetric}>{latestMeasurement ? latestMeasurement.weightKg.toFixed(1) : '--'}</Text>
+            <Text style={styles.metricLabel}>kg</Text>
+          </View>
+          <Sparkline measurements={weightHistory} metric="weightKg" color="#F4B860" />
+        </View>
+      </View>
+
+      <View style={styles.panel}>
+        <Text style={styles.sectionLabel}>Composicion corporal</Text>
+        <View style={styles.compositionGrid}>
+          <BodyMetricCard
+            label="Grasa"
+            value={latestMeasurement?.bodyFatPct}
+            suffix="%"
+            summary={getBodyFatSummary(latestMeasurement?.bodyFatPct, bodySex)}
+          />
+          <BodyMetricCard
+            label="Musculo"
+            value={latestMeasurement?.musclePct}
+            suffix="%"
+            summary={getMuscleSummary(latestMeasurement?.musclePct, bodySex)}
+          />
+          <BodyMetricCard
+            label="Hueso"
+            value={latestMeasurement?.bonePct}
+            suffix="%"
+            summary={getBoneSummary(latestMeasurement?.bonePct, bodySex)}
+          />
+          <BodyMetricCard
+            label="Agua"
+            value={latestMeasurement?.waterPct}
+            suffix="%"
+            summary={getWaterSummary(latestMeasurement?.waterPct, bodySex)}
+          />
+        </View>
+      </View>
+
+      <View style={styles.panel}>
+        <Text style={styles.sectionLabel}>IMC</Text>
+        <View style={styles.bmiRow}>
+          <Text style={styles.bigMetric}>{bmi ? bmi.toFixed(1) : '--'}</Text>
+          <View style={styles.headerTitle}>
+            <Text style={[styles.panelTitle, getStatusTextStyle(bmiSummary.status)]}>{bmiSummary.label}</Text>
+            <Text style={styles.muted}>{bmiSummary.description}</Text>
+          </View>
+        </View>
+        <View style={styles.bmiTrack}>
+          <View style={[styles.bmiMarker, { left: `${getBmiMarkerPosition(bmi)}%` }]} />
+        </View>
+        <View style={styles.bmiLabels}>
+          <Text style={styles.muted}>Bajo</Text>
+          <Text style={styles.muted}>Saludable</Text>
+          <Text style={styles.muted}>Sobrepeso</Text>
+          <Text style={styles.muted}>Obesidad</Text>
+        </View>
+        {!!referenceHeight && !!bodyProfile?.heightCm && Math.abs(bodyProfile.heightCm - referenceHeight) > 5 && (
+          <Text style={styles.bmiHint}>
+            Con {latestMeasurement?.weightKg.toFixed(1)} kg y {bodyProfile.heightCm} cm, este IMC es correcto. Para un IMC
+            cercano a 23.7 la altura seria aprox. {Math.round(referenceHeight)} cm.
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.panel}>
+        <View style={styles.headerRow}>
+          <Text style={styles.sectionLabel}>Fotos de progreso</Text>
+          <Pressable style={styles.smallActionButton} onPress={addProgressPhoto}>
+            <Text style={styles.smallActionText}>+ Foto</Text>
+          </Pressable>
+        </View>
+        <View style={styles.photoGroups}>
+          {photoGroups.map((group) => (
+            <View key={group.key} style={styles.photoFolder}>
+              <Pressable
+                style={styles.photoFolderHeader}
+                onPress={() => setOpenPhotoGroupKey(openPhotoGroupKey === group.key ? null : group.key)}
+              >
+                <View style={styles.folderIcon}>
+                  <Text style={styles.folderIconText}>▰</Text>
+                </View>
+                <View style={styles.headerTitle}>
+                  <Text style={styles.photoGroupTitle}>{group.title}</Text>
+                  <Text style={styles.muted}>{group.photos.length} fotos</Text>
+                </View>
+                <Text style={styles.folderChevron}>{openPhotoGroupKey === group.key ? '−' : '+'}</Text>
+              </Pressable>
+              {openPhotoGroupKey === group.key && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+                  {group.photos.map((photo) => (
+                    <Pressable key={photo.id} style={styles.photoCard} onPress={() => openProgressPhoto(photo)}>
+                      <Image source={{ uri: photo.uri }} style={styles.progressPhoto} />
+                      <Text style={styles.photoDate}>{formatMeasurementDate(photo.capturedAt)}</Text>
+                      <Pressable style={styles.photoDelete} onPress={() => deleteProgressPhoto(photo.id)}>
+                        <Text style={styles.photoDeleteText}>Eliminar</Text>
+                      </Pressable>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          ))}
+          {!progressPhotos.length && <Text style={styles.emptyText}>Todavia no hay fotos guardadas.</Text>}
+        </View>
+      </View>
+
+      <View style={styles.panel}>
+        <Text style={styles.sectionLabel}>Historial corporal</Text>
+        {bodyMeasurements.map((measurement) => (
+          <View key={measurement.id} style={styles.bodyHistoryRow}>
+            <View style={styles.headerTitle}>
+              <Text style={styles.panelTitle}>{formatMeasurementDate(measurement.measuredAt)}</Text>
+              <Text style={styles.muted}>
+                {measurement.weightKg} kg · grasa {measurement.bodyFatPct}% · musculo {measurement.musclePct}% · agua{' '}
+                {measurement.waterPct}%
+              </Text>
+            </View>
+            <Pressable style={styles.smallSquareButton} onPress={() => deleteBodyMeasurement(measurement.id)}>
+              <Text style={styles.smallSquareButtonText}>×</Text>
+            </Pressable>
+          </View>
+        ))}
+        {!bodyMeasurements.length && <Text style={styles.emptyText}>Registra tu primera medicion corporal.</Text>}
+      </View>
+
       <View style={styles.panel}>
         <Text style={styles.sectionLabel}>Records por ejercicio</Text>
         {exercises.map((exercise) => (
@@ -2005,6 +2441,274 @@ function ProgressScreen({
       </View>
     </View>
   );
+}
+
+function BodyProfileModal({
+  close,
+  draft,
+  save,
+  setDraft,
+}: {
+  close: () => void;
+  draft: BodyProfileDraft | null;
+  save: () => void;
+  setDraft: Dispatch<SetStateAction<BodyProfileDraft | null>>;
+}) {
+  if (!draft) {
+    return null;
+  }
+
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={close}>
+      <View style={styles.modalScrim}>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Datos personales</Text>
+          <TextInput
+            keyboardType="decimal-pad"
+            placeholder="Altura en cm"
+            placeholderTextColor="#7C8797"
+            style={styles.editorInput}
+            value={draft.heightCm}
+            onChangeText={(heightCm) => setDraft((current) => (current ? { ...current, heightCm } : current))}
+          />
+          <TextInput
+            keyboardType="number-pad"
+            placeholder="Edad"
+            placeholderTextColor="#7C8797"
+            style={styles.editorInput}
+            value={draft.age}
+            onChangeText={(age) => setDraft((current) => (current ? { ...current, age } : current))}
+          />
+          <Text style={styles.editorLabel}>Sexo para rangos corporales</Text>
+          <View style={styles.segmentedControl}>
+            <Pressable
+              style={[styles.profileSegmentButton, draft.sex === 'male' && styles.profileSegmentButtonActive]}
+              onPress={() => setDraft((current) => (current ? { ...current, sex: 'male' } : current))}
+            >
+              <Text style={[styles.profileSegmentButtonText, draft.sex === 'male' && styles.profileSegmentButtonTextActive]}>Hombre</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.profileSegmentButton, draft.sex === 'female' && styles.profileSegmentButtonActive]}
+              onPress={() => setDraft((current) => (current ? { ...current, sex: 'female' } : current))}
+            >
+              <Text style={[styles.profileSegmentButtonText, draft.sex === 'female' && styles.profileSegmentButtonTextActive]}>Mujer</Text>
+            </Pressable>
+          </View>
+          <View style={styles.modalActions}>
+            <Pressable style={styles.modalSecondary} onPress={close}>
+              <Text style={styles.modalSecondaryText}>Cancelar</Text>
+            </Pressable>
+            <Pressable style={styles.modalPrimary} onPress={save}>
+              <Text style={styles.modalPrimaryText}>Guardar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ProgressPhotoViewer({
+  close,
+  deletePhoto,
+  photo,
+  saveToGallery,
+}: {
+  close: () => void;
+  deletePhoto: (photoId: string) => void;
+  photo: ProgressPhoto | null;
+  saveToGallery: (photo: ProgressPhoto) => void;
+}) {
+  const insets = useSafeAreaInsets();
+
+  if (!photo) {
+    return null;
+  }
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={close}>
+      <View
+        style={[
+          styles.viewerScrim,
+          {
+            paddingTop: insets.top + 78,
+            paddingBottom: Math.max(insets.bottom, 18) + 98,
+          },
+        ]}
+      >
+        <View style={[styles.viewerTopBar, { top: insets.top + 12 }]}>
+          <Pressable style={styles.viewerButton} onPress={close}>
+            <Text style={styles.viewerButtonText}>Cerrar</Text>
+          </Pressable>
+          <Text style={styles.viewerDate}>{formatMeasurementDate(photo.capturedAt)}</Text>
+        </View>
+        <Image source={{ uri: photo.uri }} style={styles.viewerImage} resizeMode="contain" />
+        <View style={[styles.viewerActions, { bottom: Math.max(insets.bottom, 18) + 14 }]}>
+          <Pressable style={styles.viewerSaveButton} onPress={() => saveToGallery(photo)}>
+            <Text style={styles.viewerSaveButtonText}>Guardar</Text>
+          </Pressable>
+          <Pressable
+            style={styles.viewerDeleteButton}
+            onPress={() => {
+              deletePhoto(photo.id);
+              close();
+            }}
+          >
+            <Text style={styles.viewerDeleteButtonText}>Eliminar</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function BodyMeasurementModal({
+  close,
+  draft,
+  save,
+  setDraft,
+}: {
+  close: () => void;
+  draft: BodyMeasurementDraft | null;
+  save: () => void;
+  setDraft: Dispatch<SetStateAction<BodyMeasurementDraft | null>>;
+}) {
+  if (!draft) {
+    return null;
+  }
+
+  return (
+    <Modal transparent animationType="slide" visible onRequestClose={close}>
+      <View style={styles.modalScrim}>
+        <ScrollView style={styles.editorCard} contentContainerStyle={styles.editorContent}>
+          <Text style={styles.modalTitle}>Nueva medicion</Text>
+          <Text style={styles.muted}>La fecha se guarda automaticamente con el momento actual.</Text>
+          <MeasurementInput label="Peso kg" value={draft.weightKg} onChange={(weightKg) => setDraft((current) => (current ? { ...current, weightKg } : current))} />
+          <MeasurementInput label="Grasa %" value={draft.bodyFatPct} onChange={(bodyFatPct) => setDraft((current) => (current ? { ...current, bodyFatPct } : current))} />
+          <MeasurementInput label="Musculo %" value={draft.musclePct} onChange={(musclePct) => setDraft((current) => (current ? { ...current, musclePct } : current))} />
+          <MeasurementInput label="Hueso %" value={draft.bonePct} onChange={(bonePct) => setDraft((current) => (current ? { ...current, bonePct } : current))} />
+          <MeasurementInput label="Agua %" value={draft.waterPct} onChange={(waterPct) => setDraft((current) => (current ? { ...current, waterPct } : current))} />
+          <View style={styles.modalActions}>
+            <Pressable style={styles.modalSecondary} onPress={close}>
+              <Text style={styles.modalSecondaryText}>Cancelar</Text>
+            </Pressable>
+            <Pressable style={styles.modalPrimary} onPress={save}>
+              <Text style={styles.modalPrimaryText}>Guardar</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function MeasurementInput({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
+  return (
+    <View>
+      <Text style={styles.editorLabel}>{label}</Text>
+      <TextInput
+        keyboardType="decimal-pad"
+        placeholder="0"
+        placeholderTextColor="#7C8797"
+        style={styles.editorInput}
+        value={value}
+        onChangeText={onChange}
+      />
+    </View>
+  );
+}
+
+function BodyMetricCard({
+  label,
+  suffix,
+  summary,
+  value,
+}: {
+  label: string;
+  suffix: string;
+  summary: ReturnType<typeof getBodyFatSummary>;
+  value?: number;
+}) {
+  return (
+    <View style={styles.bodyMetricCard}>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.bodyMetricValue}>{value ? `${value}${suffix}` : '--'}</Text>
+      <Text style={[styles.metricStatus, getStatusTextStyle(summary.status)]}>{summary.label}</Text>
+    </View>
+  );
+}
+
+function Sparkline({
+  color,
+  measurements,
+  metric,
+}: {
+  color: string;
+  measurements: BodyMeasurement[];
+  metric: keyof Pick<BodyMeasurement, 'weightKg' | 'bodyFatPct' | 'musclePct' | 'bonePct' | 'waterPct'>;
+}) {
+  const values = measurements.slice(-8).map((measurement) => measurement[metric]);
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
+
+  return (
+    <View style={styles.sparkline}>
+      {values.map((value, index) => {
+        const height = max === min ? 18 : 12 + ((value - min) / (max - min)) * 44;
+        return <View key={`${value}-${index}`} style={[styles.sparkBar, { height, backgroundColor: color }]} />;
+      })}
+      {!values.length && <Text style={styles.muted}>Sin historial</Text>}
+    </View>
+  );
+}
+
+function groupProgressPhotos(photos: ProgressPhoto[], measurements: BodyMeasurement[]) {
+  const measurementById = new Map(measurements.map((measurement) => [measurement.id, measurement]));
+  const groups = new Map<string, { key: string; photos: ProgressPhoto[]; title: string; timestamp: number }>();
+
+  photos.forEach((photo) => {
+    const measurement = photo.measurementId ? measurementById.get(photo.measurementId) : null;
+    const date = measurement?.measuredAt ?? photo.measurementDate ?? photo.capturedAt;
+    const key = date.slice(0, 10);
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.photos.push(photo);
+      return;
+    }
+
+    groups.set(key, {
+      key,
+      photos: [photo],
+      title: measurement ? `Medicion ${formatMeasurementDate(measurement.measuredAt)}` : formatMeasurementDate(date),
+      timestamp: Date.parse(date),
+    });
+  });
+
+  return [...groups.values()].sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function getBmiMarkerPosition(bmi: number | null) {
+  if (!bmi) {
+    return 0;
+  }
+  return Math.max(0, Math.min(100, ((bmi - 16) / 20) * 100));
+}
+
+function getStatusTextStyle(status: ReturnType<typeof getBmiSummary>['status']) {
+  if (status === 'healthy') {
+    return styles.statusHealthy;
+  }
+  if (status === 'high') {
+    return styles.statusHigh;
+  }
+  if (status === 'very_high') {
+    return styles.statusVeryHigh;
+  }
+  if (status === 'low') {
+    return styles.statusLow;
+  }
+  return styles.statusUnknown;
 }
 
 function ActualInput({
@@ -2187,9 +2891,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
   },
+  eyebrow: {
+    color: '#7DD3C7',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
   h1: {
     color: '#F7FAFC',
     fontSize: 32,
+    fontWeight: '900',
+  },
+  h2: {
+    color: '#F7FAFC',
+    fontSize: 24,
     fontWeight: '900',
   },
   heroCopy: {
@@ -2942,6 +3657,343 @@ const styles = StyleSheet.create({
     color: '#F0B35B',
     fontSize: 12,
     fontWeight: '900',
+  },
+  heroPanel: {
+    borderRadius: 8,
+    backgroundColor: '#172027',
+    borderWidth: 1,
+    borderColor: '#27343D',
+    padding: 18,
+    gap: 14,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  iconButton: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#7DD3C7',
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonText: {
+    color: '#7DD3C7',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  bodyProfileRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  weightSummaryRow: {
+    minHeight: 86,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: 16,
+  },
+  bigMetric: {
+    color: '#F7FAFC',
+    fontSize: 42,
+    fontWeight: '900',
+  },
+  sparkline: {
+    flex: 1,
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    gap: 7,
+  },
+  sparkBar: {
+    width: 9,
+    borderRadius: 6,
+    opacity: 0.95,
+  },
+  compositionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  bodyMetricCard: {
+    width: '48%',
+    minHeight: 108,
+    borderRadius: 8,
+    backgroundColor: '#101820',
+    borderWidth: 1,
+    borderColor: '#27343D',
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  bodyMetricValue: {
+    color: '#F7FAFC',
+    fontSize: 28,
+    fontWeight: '900',
+  },
+  metricStatus: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  statusHealthy: {
+    color: '#7DD3C7',
+  },
+  statusHigh: {
+    color: '#F0B35B',
+  },
+  statusVeryHigh: {
+    color: '#E15D5D',
+  },
+  statusLow: {
+    color: '#8BB8FF',
+  },
+  statusUnknown: {
+    color: '#9BA8B4',
+  },
+  bmiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+  },
+  bmiTrack: {
+    height: 8,
+    borderRadius: 8,
+    marginTop: 18,
+    backgroundColor: '#F0B35B',
+  },
+  bmiMarker: {
+    position: 'absolute',
+    top: -7,
+    width: 22,
+    height: 22,
+    marginLeft: -11,
+    borderRadius: 11,
+    backgroundColor: '#7DD3C7',
+    borderWidth: 3,
+    borderColor: '#172027',
+  },
+  bmiLabels: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  bmiHint: {
+    marginTop: 12,
+    color: '#F0B35B',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '800',
+  },
+  segmentedControl: {
+    minHeight: 46,
+    borderRadius: 8,
+    backgroundColor: '#101820',
+    borderWidth: 1,
+    borderColor: '#27343D',
+    padding: 4,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  profileSegmentButton: {
+    flex: 1,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileSegmentButtonActive: {
+    backgroundColor: '#7DD3C7',
+  },
+  profileSegmentButtonText: {
+    color: '#9BA8B4',
+    fontWeight: '900',
+  },
+  profileSegmentButtonTextActive: {
+    color: '#071313',
+  },
+  smallActionButton: {
+    minHeight: 36,
+    borderRadius: 8,
+    backgroundColor: '#222D35',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  smallActionText: {
+    color: '#7DD3C7',
+    fontWeight: '900',
+  },
+  photoStrip: {
+    gap: 10,
+    paddingVertical: 6,
+  },
+  photoGroups: {
+    gap: 14,
+  },
+  photoFolder: {
+    borderRadius: 8,
+    backgroundColor: '#101820',
+    borderWidth: 1,
+    borderColor: '#27343D',
+    overflow: 'hidden',
+  },
+  photoFolderHeader: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+  },
+  folderIcon: {
+    width: 46,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#223038',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderIconText: {
+    color: '#F0B35B',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  folderChevron: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: '#222D35',
+    color: '#7DD3C7',
+    fontSize: 24,
+    fontWeight: '900',
+    lineHeight: 32,
+    textAlign: 'center',
+  },
+  photoGroup: {
+    gap: 6,
+  },
+  photoGroupTitle: {
+    color: '#D6DEE5',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  photoCard: {
+    width: 128,
+    borderRadius: 8,
+    backgroundColor: '#101820',
+    borderWidth: 1,
+    borderColor: '#27343D',
+    padding: 8,
+    gap: 6,
+  },
+  viewerScrim: {
+    flex: 1,
+    backgroundColor: 'rgba(5,9,12,0.96)',
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+  },
+  viewerTopBar: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  viewerButton: {
+    minHeight: 40,
+    borderRadius: 8,
+    backgroundColor: '#EAF2EE',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  viewerButtonText: {
+    color: '#111A1F',
+    fontWeight: '900',
+  },
+  viewerDate: {
+    color: '#D6DEE5',
+    fontWeight: '900',
+    flex: 1,
+    textAlign: 'right',
+  },
+  viewerImage: {
+    width: '100%',
+    flex: 1,
+  },
+  viewerActions: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    minHeight: 64,
+    borderRadius: 8,
+    backgroundColor: 'rgba(17,26,31,0.92)',
+    borderWidth: 1,
+    borderColor: '#2B3A43',
+    padding: 8,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  viewerSaveButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: '#EAF2EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerSaveButtonText: {
+    color: '#111A1F',
+    fontWeight: '900',
+    fontSize: 14,
+  },
+  viewerDeleteButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: '#D84A4A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerDeleteButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 14,
+  },
+  progressPhoto: {
+    width: '100%',
+    height: 144,
+    borderRadius: 6,
+    backgroundColor: '#222D35',
+  },
+  photoDate: {
+    color: '#D6DEE5',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  photoDelete: {
+    minHeight: 30,
+    borderRadius: 6,
+    backgroundColor: '#D84A4A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoDeleteText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  bodyHistoryRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#26343E',
+    gap: 12,
   },
   progressRow: {
     minHeight: 46,

@@ -21,14 +21,39 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Gymetric necesita acceso a tus fotos para guardar fotos de progreso corporal."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Gymetric necesita acceso a tu galería para guardar fotos de progreso.",
+          "savePhotosPermission": "Gymetric necesita permiso para guardar fotos en tu galería.",
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "backgroundColor": "#0B1115",
+          "borderColor": "#0B1115",
+          "barStyle": "light",
+          "position": "relative"
+        }
+      ]
     ],
     "extra": {
       "eas": {
