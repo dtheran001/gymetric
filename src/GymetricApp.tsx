@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
+import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import {
@@ -22,7 +22,11 @@ import {
   Vibration,
   View,
 } from 'react-native';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+  ShadowDecorator,
+} from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
@@ -178,9 +182,6 @@ function GymetricApp() {
   useEffect(() => {
     Notifications.requestPermissionsAsync();
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#0B1115').catch(() => {});
-      NavigationBar.setBorderColorAsync('#0B1115').catch(() => {});
-      NavigationBar.setButtonStyleAsync('light').catch(() => {});
       Notifications.setNotificationChannelAsync('rest-timer', {
         name: 'Descansos',
         importance: Notifications.AndroidImportance.HIGH,
@@ -1116,10 +1117,6 @@ function GymetricApp() {
           <Text style={styles.kicker}>Gymetric</Text>
           <Text style={styles.title}>Entrena con datos claros</Text>
         </View>
-        <View style={styles.scorePill}>
-          <Text style={styles.scoreValue}>{achievements.length}</Text>
-          <Text style={styles.scoreLabel}>PRs</Text>
-        </View>
       </View>
 
       {storageError && (
@@ -2000,14 +1997,22 @@ function RoutineEditorModal({
 
   return (
     <Modal transparent animationType="slide" visible onRequestClose={close}>
-      <View style={styles.modalScrim}>
-        <DraggableFlatList
-          activationDistance={1}
-          containerStyle={styles.editorCard}
-          contentContainerStyle={styles.editorContent}
-          data={draft.exercises}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={
+      <GestureHandlerRootView style={styles.gestureRoot}>
+        <View style={styles.modalScrim}>
+          <DraggableFlatList
+            activationDistance={12}
+            animationConfig={{
+              damping: 28,
+              energyThreshold: 0.001,
+              mass: 0.15,
+              overshootClamping: true,
+              stiffness: 260,
+            }}
+            containerStyle={styles.editorCard}
+            contentContainerStyle={styles.editorContent}
+            data={draft.exercises}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={
             <>
               <Text style={styles.modalTitle}>{draft.id ? 'Editar rutina' : 'Nueva rutina'}</Text>
               <TextInput
@@ -2050,8 +2055,8 @@ function RoutineEditorModal({
 
               <Text style={styles.editorLabel}>Rutina</Text>
             </>
-          }
-          ListFooterComponent={
+            }
+            ListFooterComponent={
             <>
               <View style={styles.modalActions}>
                 <Pressable style={styles.modalSecondary} onPress={close}>
@@ -2067,36 +2072,82 @@ function RoutineEditorModal({
                 </Pressable>
               )}
             </>
-          }
-          onDragEnd={({ data }) => reorderExercises(data)}
-          renderItem={({ item: routineExercise, drag, isActive, getIndex }: RenderItemParams<RoutineExercise>) => {
+            }
+            onDragEnd={({ data }) => reorderExercises(data)}
+            renderItem={({
+            item: routineExercise,
+            drag,
+            isActive,
+            getIndex,
+          }: RenderItemParams<RoutineExercise>) => {
             const exerciseIndex = getIndex() ?? 0;
             const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
             const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
             return (
-              <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockActive]}>
-                <View style={styles.routineEditorHeader}>
-                  <Pressable style={styles.headerTitle} onPress={() => toggleExerciseCollapsed(routineExercise.id)}>
-                    <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
-                    <Text style={styles.muted}>
-                      {routineExercise.sets.length} series · {isCollapsed ? 'Plegado' : 'Desplegado'}
-                    </Text>
-                  </Pressable>
-                  <Pressable style={styles.dragHandle} onPressIn={drag}>
-                    <Text style={styles.dragHandleText}>≡</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
-                    <Text style={styles.smallSquareButtonText}>↑</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
-                    <Text style={styles.smallSquareButtonText}>↓</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
-                    <Text style={styles.smallSquareButtonText}>×</Text>
-                  </Pressable>
-                </View>
-                {!isCollapsed && (
-                  <>
+              <ScaleDecorator activeScale={1.015}>
+                <ShadowDecorator elevation={16} opacity={0.32} radius={12}>
+                  <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockDragging]}>
+                    <Pressable
+                  accessibilityLabel={`${isCollapsed ? 'Desplegar' : 'Plegar'} ${exercise?.name ?? 'ejercicio'}`}
+                  accessibilityHint="Mantén pulsado para cambiar su posición"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: !isCollapsed }}
+                  delayLongPress={250}
+                  disabled={isActive}
+                  style={styles.routineEditorTitleRow}
+                  onLongPress={() => {
+                    Vibration.vibrate(30);
+                    drag();
+                  }}
+                  onPress={() => {
+                    if (!isActive) {
+                      toggleExerciseCollapsed(routineExercise.id);
+                    }
+                  }}
+                    >
+                      <MaterialIcons
+                        color="#7DD3C7"
+                        name={isCollapsed ? 'chevron-right' : 'expand-more'}
+                        size={24}
+                      />
+                      <View style={styles.headerTitle}>
+                        <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
+                        <Text style={styles.muted}>{routineExercise.sets.length} series</Text>
+                      </View>
+                    </Pressable>
+                    <View style={styles.routineEditorControls}>
+                      <Pressable
+                    accessibilityLabel="Subir ejercicio"
+                    accessibilityRole="button"
+                    disabled={exerciseIndex === 0}
+                    style={[styles.smallSquareButton, exerciseIndex === 0 && styles.controlButtonDisabled]}
+                    onPress={() => moveExercise(exerciseIndex, -1)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>↑</Text>
+                      </Pressable>
+                      <Pressable
+                    accessibilityLabel="Bajar ejercicio"
+                    accessibilityRole="button"
+                    disabled={exerciseIndex === draft.exercises.length - 1}
+                    style={[
+                      styles.smallSquareButton,
+                      exerciseIndex === draft.exercises.length - 1 && styles.controlButtonDisabled,
+                    ]}
+                    onPress={() => moveExercise(exerciseIndex, 1)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>↓</Text>
+                      </Pressable>
+                      <Pressable
+                    accessibilityLabel="Eliminar ejercicio de la rutina"
+                    accessibilityRole="button"
+                    style={styles.smallSquareButton}
+                    onPress={() => removeExerciseFromRoutine(exerciseIndex)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>×</Text>
+                      </Pressable>
+                    </View>
+                    {!isCollapsed && (
+                      <>
                     <RestTimeInput
                       restSeconds={routineExercise.restSeconds}
                       onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
@@ -2147,13 +2198,16 @@ function RoutineEditorModal({
                     <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
                       <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
                     </Pressable>
-                  </>
-                )}
-              </View>
+                      </>
+                    )}
+                  </View>
+                </ShadowDecorator>
+              </ScaleDecorator>
             );
-          }}
-        />
-      </View>
+            }}
+          />
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -2255,6 +2309,8 @@ function ProgressScreen({
   progressPhotos: ProgressPhoto[];
 }) {
   const [openPhotoGroupKey, setOpenPhotoGroupKey] = useState<string | null>(null);
+  const [areRecordsExpanded, setAreRecordsExpanded] = useState(false);
+  const [areAchievementsExpanded, setAreAchievementsExpanded] = useState(false);
   const latestMeasurement = getLatestMeasurement(bodyMeasurements);
   const bmi = calculateBmi(bodyProfile, latestMeasurement);
   const bmiSummary = getBmiSummary(bmi);
@@ -2377,7 +2433,11 @@ function ProgressScreen({
                   <Text style={styles.photoGroupTitle}>{group.title}</Text>
                   <Text style={styles.muted}>{group.photos.length} fotos</Text>
                 </View>
-                <Text style={styles.folderChevron}>{openPhotoGroupKey === group.key ? '−' : '+'}</Text>
+                <MaterialIcons
+                  color="#7DD3C7"
+                  name={openPhotoGroupKey === group.key ? 'expand-more' : 'chevron-right'}
+                  size={24}
+                />
               </Pressable>
               {openPhotoGroupKey === group.key && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
@@ -2418,26 +2478,62 @@ function ProgressScreen({
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>Records por ejercicio</Text>
-        {exercises.map((exercise) => (
-          <View key={exercise.id} style={styles.progressRow}>
-            <Text style={styles.progressName}>{exercise.name}</Text>
-            <Text style={styles.progressValue}>{getPersonalBest(logs, exercise.id)} kg</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: areRecordsExpanded }}
+          style={styles.collapsibleHeader}
+          onPress={() => setAreRecordsExpanded((current) => !current)}
+        >
+          <View style={styles.collapsibleContent}>
+            <View style={styles.collapsibleTitleRow}>
+              <Text style={styles.collapsibleTitle}>Récords por ejercicio</Text>
+              <MaterialIcons
+                color="#7DD3C7"
+                name={areRecordsExpanded ? 'expand-more' : 'chevron-right'}
+                size={24}
+              />
+            </View>
+            <Text style={styles.muted}>{exercises.length} ejercicios</Text>
           </View>
-        ))}
+        </Pressable>
+        {areRecordsExpanded &&
+          exercises.map((exercise) => (
+            <View key={exercise.id} style={styles.progressRow}>
+              <Text style={styles.progressName}>{exercise.name}</Text>
+              <Text style={styles.progressValue}>{getPersonalBest(logs, exercise.id)} kg</Text>
+            </View>
+          ))}
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>Medallas</Text>
-        {achievements.map((achievement) => (
-          <View key={achievement.id} style={styles.medal}>
-            <Text style={styles.medalIcon}>PR</Text>
-            <View style={styles.medalText}>
-              <Text style={styles.panelTitle}>{achievement.title}</Text>
-              <Text style={styles.muted}>{achievement.description}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: areAchievementsExpanded }}
+          style={styles.collapsibleHeader}
+          onPress={() => setAreAchievementsExpanded((current) => !current)}
+        >
+          <View style={styles.collapsibleContent}>
+            <View style={styles.collapsibleTitleRow}>
+              <Text style={styles.collapsibleTitle}>Medallas</Text>
+              <MaterialIcons
+                color="#7DD3C7"
+                name={areAchievementsExpanded ? 'expand-more' : 'chevron-right'}
+                size={24}
+              />
             </View>
+            <Text style={styles.muted}>{achievements.length} conseguidas</Text>
           </View>
-        ))}
+        </Pressable>
+        {areAchievementsExpanded &&
+          achievements.map((achievement) => (
+            <View key={achievement.id} style={styles.medal}>
+              <Text style={styles.medalIcon}>PR</Text>
+              <View style={styles.medalText}>
+                <Text style={styles.panelTitle}>{achievement.title}</Text>
+                <Text style={styles.muted}>{achievement.description}</Text>
+              </View>
+            </View>
+          ))}
       </View>
     </View>
   );
@@ -2757,7 +2853,9 @@ function ExerciseRow({ exercise }: { exercise: Exercise }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
+      <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={styles.metricValue}>
+        {value}
+      </Text>
       <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
@@ -2834,24 +2932,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '900',
     marginTop: 4,
-  },
-  scorePill: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: '#F0B35B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreValue: {
-    color: '#16110A',
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  scoreLabel: {
-    color: '#16110A',
-    fontSize: 11,
-    fontWeight: '800',
   },
   content: {
     padding: 20,
@@ -3032,12 +3112,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   metric: {
-    flex: 1,
+    width: '48%',
+    minHeight: 92,
     backgroundColor: '#222D35',
     borderRadius: 8,
     padding: 14,
     borderWidth: 1,
     borderColor: '#31404A',
+    justifyContent: 'space-between',
   },
   metricValue: {
     color: '#F7FAFC',
@@ -3430,27 +3512,24 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 10,
   },
-  routineEditorBlockActive: {
+  routineEditorBlockDragging: {
     borderColor: '#7DD3C7',
     backgroundColor: '#16242A',
   },
-  routineEditorHeader: {
+  routineEditorControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  routineEditorTitleRow: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  dragHandle: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: '#222D35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragHandleText: {
-    color: '#7DD3C7',
-    fontSize: 22,
-    fontWeight: '900',
+  controlButtonDisabled: {
+    opacity: 0.35,
   },
   routineSetEditorRow: {
     minHeight: 48,
@@ -3688,7 +3767,26 @@ const styles = StyleSheet.create({
   },
   bodyProfileRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
+  },
+  collapsibleHeader: {
+    minHeight: 48,
+  },
+  collapsibleContent: {
+    flex: 1,
+  },
+  collapsibleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  collapsibleTitle: {
+    color: '#7DD3C7',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   weightSummaryRow: {
     minHeight: 86,
@@ -3740,7 +3838,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   statusHealthy: {
-    color: '#7DD3C7',
+    color: '#33BFA6',
   },
   statusHigh: {
     color: '#F0B35B',
@@ -3858,17 +3956,6 @@ const styles = StyleSheet.create({
     color: '#F0B35B',
     fontSize: 22,
     fontWeight: '900',
-  },
-  folderChevron: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: '#222D35',
-    color: '#7DD3C7',
-    fontSize: 24,
-    fontWeight: '900',
-    lineHeight: 32,
-    textAlign: 'center',
   },
   photoGroup: {
     gap: 6,

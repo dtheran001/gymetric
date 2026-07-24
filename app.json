@@ -4,13 +4,13 @@
     "slug": "gymetric",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/gymetric-icon-dark.png",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/gymetric-splash-dark-v2.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0B0F14"
     },
     "ios": {
       "supportsTablet": true
@@ -18,14 +18,14 @@
     "android": {
       "package": "com.danyk.gymetric",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/gymetric-icon-dark.png",
+        "backgroundColor": "#0B0F14"
       },
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/gymetric-icon-dark.png"
     },
     "plugins": [
       "expo-sqlite",
@@ -48,17 +48,30 @@
       [
         "expo-navigation-bar",
         {
-          "backgroundColor": "#0B1115",
-          "borderColor": "#0B1115",
+          "backgroundColor": "#0B0F14",
+          "borderColor": "#0B0F14",
           "barStyle": "light",
           "position": "relative"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
         "projectId": "25fcbd2b-05eb-49c8-a33d-092267bc9774"
+      },
+      "expo-navigation-bar": {
+        "backgroundColor": "#0B0F14",
+        "borderColor": "#0B0F14",
+        "barStyle": "light",
+        "position": "relative"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/25fcbd2b-05eb-49c8-a33d-092267bc9774"
     }
   }
 }
