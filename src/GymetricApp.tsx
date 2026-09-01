@@ -46,6 +46,13 @@ import { AppSettingsProvider, useAppSettings } from './application/AppSettingsCo
 import { DietScreen } from './features/diets/DietScreen';
 import { ExerciseRow, ExercisesScreen } from './features/exercises/ExercisesScreen';
 import { ProgressScreen } from './features/progress/ProgressScreen';
+import {
+  BodyMeasurementDraft,
+  BodyMeasurementModal,
+  BodyProfileDraft,
+  BodyProfileModal,
+  ProgressPhotoViewer,
+} from './features/progress/ProgressModals';
 import { RoutinesScreen } from './features/routines/RoutinesScreen';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
@@ -64,7 +71,6 @@ import {
   savePersistedData,
 } from './data/storage';
 import {
-  formatMeasurementDate,
   getLatestMeasurement,
 } from './domain/bodyProgress';
 import { buildAchievement, formatRestTime, getPersonalBest } from './domain/progress';
@@ -154,20 +160,6 @@ type RoutineDraft = {
   preferredDays: Weekday[];
   collection: string;
   exercises: RoutineExercise[];
-};
-
-type BodyProfileDraft = {
-  heightCm: string;
-  age: string;
-  sex: 'male' | 'female';
-};
-
-type BodyMeasurementDraft = {
-  weightKg: string;
-  bodyFatPct: string;
-  musclePct: string;
-  bonePct: string;
-  waterPct: string;
 };
 
 const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
@@ -2926,187 +2918,6 @@ function WorkoutSummaryModal({
         </ScrollView>
       </View>
     </Modal>
-  );
-}
-
-function BodyProfileModal({
-  close,
-  draft,
-  save,
-  setDraft,
-}: {
-  close: () => void;
-  draft: BodyProfileDraft | null;
-  save: () => void;
-  setDraft: Dispatch<SetStateAction<BodyProfileDraft | null>>;
-}) {
-  const { preferences } = useAppSettings();
-  if (!draft) {
-    return null;
-  }
-
-  return (
-    <Modal transparent animationType="slide" visible onRequestClose={close}>
-      <View style={styles.modalScrim}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Datos personales</Text>
-          <TextInput
-            keyboardType="decimal-pad"
-            placeholder={`Altura en ${preferences.bodyUnit}`}
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.heightCm}
-            onChangeText={(heightCm) => setDraft((current) => (current ? { ...current, heightCm } : current))}
-          />
-          <TextInput
-            keyboardType="number-pad"
-            placeholder="Edad"
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.age}
-            onChangeText={(age) => setDraft((current) => (current ? { ...current, age } : current))}
-          />
-          <Text style={styles.editorLabel}>Sexo para rangos corporales</Text>
-          <View style={styles.segmentedControl}>
-            <Pressable
-              style={[styles.profileSegmentButton, draft.sex === 'male' && styles.profileSegmentButtonActive]}
-              onPress={() => setDraft((current) => (current ? { ...current, sex: 'male' } : current))}
-            >
-              <Text style={[styles.profileSegmentButtonText, draft.sex === 'male' && styles.profileSegmentButtonTextActive]}>Hombre</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.profileSegmentButton, draft.sex === 'female' && styles.profileSegmentButtonActive]}
-              onPress={() => setDraft((current) => (current ? { ...current, sex: 'female' } : current))}
-            >
-              <Text style={[styles.profileSegmentButtonText, draft.sex === 'female' && styles.profileSegmentButtonTextActive]}>Mujer</Text>
-            </Pressable>
-          </View>
-          <View style={styles.modalActions}>
-            <Pressable style={styles.modalSecondary} onPress={close}>
-              <Text style={styles.modalSecondaryText}>Cancelar</Text>
-            </Pressable>
-            <Pressable style={styles.modalPrimary} onPress={save}>
-              <Text style={styles.modalPrimaryText}>Guardar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function ProgressPhotoViewer({
-  close,
-  deletePhoto,
-  photo,
-  saveToGallery,
-}: {
-  close: () => void;
-  deletePhoto: (photoId: string) => void;
-  photo: ProgressPhoto | null;
-  saveToGallery: (photo: ProgressPhoto) => void;
-}) {
-  const insets = useSafeAreaInsets();
-
-  if (!photo) {
-    return null;
-  }
-
-  return (
-    <Modal transparent animationType="fade" visible onRequestClose={close}>
-      <View
-        style={[
-          styles.viewerScrim,
-          {
-            paddingTop: insets.top + 78,
-            paddingBottom: Math.max(insets.bottom, 18) + 98,
-          },
-        ]}
-      >
-        <View style={[styles.viewerTopBar, { top: insets.top + 12 }]}>
-          <Pressable style={styles.viewerButton} onPress={close}>
-            <Text style={styles.viewerButtonText}>Cerrar</Text>
-          </Pressable>
-          <Text style={styles.viewerDate}>{formatMeasurementDate(photo.capturedAt)}</Text>
-        </View>
-        <Image source={{ uri: photo.uri }} style={styles.viewerImage} resizeMode="contain" />
-        <View style={[styles.viewerActions, { bottom: Math.max(insets.bottom, 18) + 14 }]}>
-          <Pressable style={styles.viewerSaveButton} onPress={() => saveToGallery(photo)}>
-            <Text style={styles.viewerSaveButtonText}>Guardar</Text>
-          </Pressable>
-          <Pressable
-            style={styles.viewerDeleteButton}
-            onPress={() => {
-              deletePhoto(photo.id);
-              close();
-            }}
-          >
-            <Text style={styles.viewerDeleteButtonText}>Eliminar</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function BodyMeasurementModal({
-  close,
-  draft,
-  save,
-  setDraft,
-}: {
-  close: () => void;
-  draft: BodyMeasurementDraft | null;
-  save: () => void;
-  setDraft: Dispatch<SetStateAction<BodyMeasurementDraft | null>>;
-}) {
-  const { preferences } = useAppSettings();
-  if (!draft) {
-    return null;
-  }
-
-  return (
-    <Modal transparent animationType="slide" visible onRequestClose={close}>
-      <View style={styles.modalScrim}>
-        <ScrollView style={styles.editorCard} contentContainerStyle={styles.editorContent}>
-          <Text style={styles.modalTitle}>Nueva medicion</Text>
-          <Text style={styles.muted}>La fecha se guarda automaticamente con el momento actual.</Text>
-          <MeasurementInput
-            label={`Peso ${preferences.weightUnit}`}
-            value={draft.weightKg}
-            onChange={(weightKg) => setDraft((current) => (current ? { ...current, weightKg } : current))}
-          />
-          <MeasurementInput label="Grasa %" value={draft.bodyFatPct} onChange={(bodyFatPct) => setDraft((current) => (current ? { ...current, bodyFatPct } : current))} />
-          <MeasurementInput label="Musculo %" value={draft.musclePct} onChange={(musclePct) => setDraft((current) => (current ? { ...current, musclePct } : current))} />
-          <MeasurementInput label="Hueso %" value={draft.bonePct} onChange={(bonePct) => setDraft((current) => (current ? { ...current, bonePct } : current))} />
-          <MeasurementInput label="Agua %" value={draft.waterPct} onChange={(waterPct) => setDraft((current) => (current ? { ...current, waterPct } : current))} />
-          <View style={styles.modalActions}>
-            <Pressable style={styles.modalSecondary} onPress={close}>
-              <Text style={styles.modalSecondaryText}>Cancelar</Text>
-            </Pressable>
-            <Pressable style={styles.modalPrimary} onPress={save}>
-              <Text style={styles.modalPrimaryText}>Guardar</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
-function MeasurementInput({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
-  return (
-    <View>
-      <Text style={styles.editorLabel}>{label}</Text>
-      <TextInput
-        keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor="#7C8797"
-        style={styles.editorInput}
-        value={value}
-        onChangeText={onChange}
-      />
-    </View>
   );
 }
 
