@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { AppPreferences, defaultAppPreferences, normalizeAppPreferences } from '../domain/preferences';
 import { Achievement, BodyMeasurement, BodyProfile, Exercise, ProgressPhoto, Routine, SetLog } from '../domain/types';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './seed';
 
@@ -179,6 +180,36 @@ export async function savePersistedData(data: PersistedData) {
     .then(() => writePersistedData(snapshot));
 
   return saveQueue;
+}
+
+export async function loadAppPreferences(): Promise<AppPreferences> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM app_meta WHERE key = ?',
+    'preferences',
+  );
+  if (!row) {
+    return defaultAppPreferences;
+  }
+
+  try {
+    return normalizeAppPreferences(JSON.parse(row.value));
+  } catch {
+    return defaultAppPreferences;
+  }
+}
+
+export async function saveAppPreferences(preferences: AppPreferences) {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO app_meta (key, value) VALUES (?, ?)',
+    'preferences',
+    JSON.stringify(normalizeAppPreferences(preferences)),
+  );
+}
+
+export async function replacePersistedData(data: PersistedData) {
+  await writePersistedData(data);
 }
 
 async function writePersistedData(data: PersistedData) {
