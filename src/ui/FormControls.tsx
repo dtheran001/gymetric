@@ -1,5 +1,12 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { combineRestTime, splitRestTime } from '../workout/routineUtils';
+import { ThemeColors, useThemeColors } from './theme';
+
+function useStyles() {
+  const colors = useThemeColors();
+  return useMemo(() => createStyles(colors), [colors]);
+}
 
 export function OptionGrid<T extends string>({
   labels,
@@ -12,6 +19,7 @@ export function OptionGrid<T extends string>({
   options: T[];
   value: T;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.optionGrid}>
       {options.map((option) => (
@@ -38,6 +46,7 @@ export function MultiOptionGrid<T extends string>({
   options: T[];
   value: T[];
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.optionGrid}>
       {options.map((option) => {
@@ -57,6 +66,8 @@ export function MultiOptionGrid<T extends string>({
 }
 
 export function RestTimeInput({ onChange, restSeconds }: { onChange: (seconds: number) => void; restSeconds: number }) {
+  const colors = useThemeColors();
+  const styles = useStyles();
   const split = splitRestTime(restSeconds);
 
   return (
@@ -67,7 +78,7 @@ export function RestTimeInput({ onChange, restSeconds }: { onChange: (seconds: n
           <TextInput
             keyboardType="number-pad"
             placeholder="0"
-            placeholderTextColor="#7C8797"
+            placeholderTextColor={colors.textSubtle}
             style={styles.restEditorInput}
             value={split.minutes}
             onChangeText={(minutes) => onChange(combineRestTime(minutes, split.seconds))}
@@ -78,7 +89,7 @@ export function RestTimeInput({ onChange, restSeconds }: { onChange: (seconds: n
           <TextInput
             keyboardType="number-pad"
             placeholder="0"
-            placeholderTextColor="#7C8797"
+            placeholderTextColor={colors.textSubtle}
             style={styles.restEditorInput}
             value={split.seconds}
             onChangeText={(seconds) => onChange(combineRestTime(split.minutes, seconds))}
@@ -90,9 +101,10 @@ export function RestTimeInput({ onChange, restSeconds }: { onChange: (seconds: n
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   editorLabel: {
-    color: '#7DD3C7',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -106,24 +118,24 @@ const styles = StyleSheet.create({
   optionChip: {
     minHeight: 38,
     borderRadius: 8,
-    backgroundColor: '#222D35',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#31404A',
+    borderColor: colors.borderStrong,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   optionChipActive: {
-    backgroundColor: '#7DD3C7',
-    borderColor: '#7DD3C7',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   optionChipText: {
-    color: '#D7E0E7',
+    color: colors.text,
     fontWeight: '900',
     fontSize: 12,
   },
   optionChipTextActive: {
-    color: '#071313',
+    color: colors.onPrimary,
   },
   restEditorRow: {
     flexDirection: 'row',
@@ -134,20 +146,21 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#34444F',
+    borderColor: colors.borderStrong,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
   },
   restEditorInput: {
     flex: 1,
-    color: '#F7FAFC',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '900',
     paddingVertical: 0,
   },
   restEditorLabel: {
-    color: '#9BA8B4',
+    color: colors.textMuted,
     fontWeight: '900',
   },
-});
+  });
+}

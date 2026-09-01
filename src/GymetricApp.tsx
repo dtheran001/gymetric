@@ -1,11 +1,26 @@
+import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as MediaLibrary from 'expo-media-library';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
+import * as Sharing from 'expo-sharing';
+import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import {
+  createContext,
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  ActivityIndicator,
   Alert,
   AppState,
   BackHandler,
@@ -16,17 +31,30 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   ToastAndroid,
+  useColorScheme,
   Vibration,
   View,
 } from 'react-native';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+  ShadowDecorator,
+} from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
-import { loadPersistedData, PersistedData, savePersistedData } from './data/storage';
+import {
+  loadAppPreferences,
+  loadPersistedData,
+  PersistedData,
+  replacePersistedData,
+  saveAppPreferences,
+  savePersistedData,
+} from './data/storage';
 import {
   calculateBmi,
   estimateHeightForBmi,
@@ -39,6 +67,10 @@ import {
   getWaterSummary,
 } from './domain/bodyProgress';
 import { buildAchievement, formatRestTime, getPersonalBest } from './domain/progress';
+import {
+  AppPreferences,
+  defaultAppPreferences,
+} from './domain/preferences';
 import {
   Achievement,
   BodyMeasurement,
@@ -59,6 +91,14 @@ import {
 import { MultiOptionGrid, OptionGrid, RestTimeInput } from './ui/FormControls';
 import { equipmentLabels, gripLabels, movementLabels, muscleLabels, weekdayLabels } from './ui/labels';
 import {
+  darkTheme,
+  lightTheme,
+  resolveLegacyColor,
+  ResolvedTheme,
+  ThemeColorsContext,
+  ThemeColors,
+} from './ui/theme';
+import {
   estimateRoutineMinutes,
   getNextSetKind,
   getSetKindLabel,
@@ -67,14 +107,28 @@ import {
 } from './workout/routineUtils';
 import { ActiveWorkout, ActualSetInput, SetEditorTarget, Tab, WorkoutSummary, WorkoutView } from './workout/sessionTypes';
 
+const ACTIVE_WORKOUT_NOTIFICATION_ID = 'gymetric-active-workout';
+const REST_FINISHED_NOTIFICATION_ID = 'gymetric-rest-finished';
+const WORKOUT_NOTIFICATION_CHANNEL_ID = 'workout-status';
+const REST_NOTIFICATION_CHANNEL_ID = 'rest-timer-vibrate-v2';
+const REST_NOTIFICATION_SOUND_ONLY_CHANNEL_ID = 'rest-timer-sound-only-v2';
+
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    const notificationType = notification.request.content.data?.type;
+    const isRestFinished = notificationType === 'rest-finished';
+
+    return {
+      shouldShowAlert: true,
+      shouldShowBanner: isRestFinished,
+      shouldShowList: true,
+      shouldPlaySound: isRestFinished,
+      shouldSetBadge: false,
+      priority: isRestFinished
+        ? Notifications.AndroidNotificationPriority.MAX
+        : Notifications.AndroidNotificationPriority.LOW,
+    };
+  },
 });
 
 type ExerciseDraft = {
@@ -114,18 +168,110 @@ const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arm
 const equipmentOptions: EquipmentKind[] = ['machine', 'free_weight', 'barbell', 'dumbbell', 'cable', 'bodyweight', 'other'];
 const gripOptions: GripKind[] = ['none', 'prone', 'supine', 'neutral', 'mixed'];
 const movementOptions: MovementFocus[] = ['none', 'concentric', 'eccentric', 'tempo'];
+const KG_TO_LB = 2.2046226218;
+const CM_TO_IN = 0.3937007874;
+
+function displayWeight(valueKg: number, unit: AppPreferences['weightUnit']) {
+  return unit === 'lb' ? valueKg * KG_TO_LB : valueKg;
+}
+
+function weightToKg(value: number, unit: AppPreferences['weightUnit']) {
+  return unit === 'lb' ? value / KG_TO_LB : value;
+}
+
+function displayBodyLength(valueCm: number, unit: AppPreferences['bodyUnit']) {
+  return unit === 'in' ? valueCm * CM_TO_IN : valueCm;
+}
+
+function bodyLengthToCm(value: number, unit: AppPreferences['bodyUnit']) {
+  return unit === 'in' ? value / CM_TO_IN : value;
+}
+
+function formatDecimal(value: number, digits = 1) {
+  return Number(value.toFixed(digits)).toString();
+}
+
+type AppSettingsContextValue = {
+  colors: ThemeColors;
+  preferences: AppPreferences;
+  preferencesReady: boolean;
+  updatePreferences: (changes: Partial<AppPreferences>) => void;
+};
+
+const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
+
+function useAppSettings() {
+  const value = useContext(AppSettingsContext);
+  if (!value) {
+    throw new Error('useAppSettings debe usarse dentro de AppSettingsContext.');
+  }
+  return value;
+}
 
 export default function App() {
+  const systemScheme = useColorScheme();
+  const [preferences, setPreferences] = useState(defaultAppPreferences);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const resolvedTheme: ResolvedTheme =
+    preferences.theme === 'system'
+      ? systemScheme === 'light'
+        ? 'light'
+        : 'dark'
+      : preferences.theme;
+  const colors = resolvedTheme === 'light' ? lightTheme : darkTheme;
+
+  styles = resolvedTheme === 'light' ? lightStyles : darkStyles;
+
+  useEffect(() => {
+    let mounted = true;
+    loadAppPreferences()
+      .then((loadedPreferences) => {
+        if (mounted) {
+          setPreferences(loadedPreferences);
+          setPreferencesReady(true);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setPreferencesReady(true);
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync(colors.background).catch(() => undefined);
+      NavigationBar.setBorderColorAsync(colors.background).catch(() => undefined);
+      NavigationBar.setButtonStyleAsync(colors.scheme === 'dark' ? 'light' : 'dark').catch(() => undefined);
+    }
+  }, [colors]);
+
+  function updatePreferences(changes: Partial<AppPreferences>) {
+    setPreferences((current) => {
+      const next = { ...current, ...changes };
+      saveAppPreferences(next).catch(() => undefined);
+      return next;
+    });
+  }
+
   return (
-    <GestureHandlerRootView style={styles.gestureRoot}>
-      <SafeAreaProvider>
-        <GymetricApp />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <AppSettingsContext.Provider value={{ colors, preferences, preferencesReady, updatePreferences }}>
+      <ThemeColorsContext.Provider value={colors}>
+        <GestureHandlerRootView style={styles.gestureRoot}>
+          <SafeAreaProvider>
+            <GymetricApp />
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </ThemeColorsContext.Provider>
+    </AppSettingsContext.Provider>
   );
 }
 
 function GymetricApp() {
+  const { colors, preferences, preferencesReady, updatePreferences } = useAppSettings();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('today');
   const [exercises, setExercises] = useState(seedExercises);
@@ -146,6 +292,8 @@ function GymetricApp() {
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutSummary | null>(null);
   const [lastBackPressAt, setLastBackPressAt] = useState(0);
   const [isStorageReady, setIsStorageReady] = useState(false);
+  const [minimumLaunchReady, setMinimumLaunchReady] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
 
   const todayWeekday = getTodayWeekday();
@@ -153,6 +301,36 @@ function GymetricApp() {
   const nextRoutine = suggestedRoutines[0] ?? routines[0];
   const totalSetsLogged = logs.length;
   const latestAchievement = achievements[0];
+  const notificationRoutineExercise = activeWorkout?.routine.exercises[activeWorkout.exerciseIndex];
+  const notificationRoutineSet = notificationRoutineExercise?.sets[activeWorkout?.setIndex ?? 0];
+  const notificationSetKey =
+    notificationRoutineExercise && notificationRoutineSet
+      ? `${notificationRoutineExercise.id}:${notificationRoutineSet.id}`
+      : null;
+  const notificationInput = notificationSetKey ? activeWorkout?.inputs[notificationSetKey] : null;
+  const activeNotificationSignature = activeWorkout
+    ? [
+        activeWorkout.routine.id,
+        activeWorkout.exerciseIndex,
+        activeWorkout.setIndex,
+        activeWorkout.isResting,
+        notificationInput?.weightKg,
+        notificationInput?.reps,
+        preferences.weightUnit,
+      ].join('|')
+    : 'inactive';
+
+  useEffect(() => {
+    const tag = 'gymetric-active-workout';
+    if (preferences.keepScreenAwake && activeWorkout) {
+      activateKeepAwakeAsync(tag).catch(() => undefined);
+    } else {
+      deactivateKeepAwake(tag);
+    }
+    return () => {
+      deactivateKeepAwake(tag);
+    };
+  }, [activeWorkout, preferences.keepScreenAwake]);
 
   function buildPersistedData(overrides: Partial<PersistedData> = {}): PersistedData {
     return {
@@ -176,19 +354,52 @@ function GymetricApp() {
   }
 
   useEffect(() => {
-    Notifications.requestPermissionsAsync();
+    const timeout = setTimeout(() => setMinimumLaunchReady(true), 700);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (preferences.restNotificationsEnabled) {
+      Notifications.requestPermissionsAsync();
+    } else {
+      Notifications.cancelScheduledNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+      Notifications.dismissNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+    }
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#0B1115').catch(() => {});
-      NavigationBar.setBorderColorAsync('#0B1115').catch(() => {});
-      NavigationBar.setButtonStyleAsync('light').catch(() => {});
-      Notifications.setNotificationChannelAsync('rest-timer', {
-        name: 'Descansos',
+      Notifications.setNotificationChannelAsync(REST_NOTIFICATION_CHANNEL_ID, {
+        name: 'Fin del descanso',
+        description: 'Avisos cuando termina un temporizador de descanso.',
         importance: Notifications.AndroidImportance.HIGH,
         sound: 'default',
         vibrationPattern: [0, 250, 250, 250],
+        audioAttributes: {
+          usage: Notifications.AndroidAudioUsage.MEDIA,
+          contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+        },
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
+      Notifications.setNotificationChannelAsync(REST_NOTIFICATION_SOUND_ONLY_CHANNEL_ID, {
+        name: 'Fin del descanso sin vibración',
+        description: 'Avisos sonoros sin vibración cuando termina un descanso.',
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: 'default',
+        enableVibrate: false,
+        audioAttributes: {
+          usage: Notifications.AndroidAudioUsage.MEDIA,
+          contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+        },
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
+      Notifications.setNotificationChannelAsync(WORKOUT_NOTIFICATION_CHANNEL_ID, {
+        name: 'Entrenamiento activo',
+        description: 'Información persistente del ejercicio y la serie actuales.',
+        importance: Notifications.AndroidImportance.LOW,
+        sound: null,
+        enableVibrate: false,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       });
     }
-  }, []);
+  }, [preferences.restNotificationsEnabled]);
 
   useEffect(() => {
     let isMounted = true;
@@ -257,8 +468,19 @@ function GymetricApp() {
   }, [activeWorkout?.startedAt]);
 
   useEffect(() => {
+    if (activeWorkout) {
+      updateActiveWorkoutNotification(activeWorkout).catch(() => undefined);
+    } else {
+      dismissActiveWorkoutNotification();
+      Notifications.dismissNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+      Notifications.cancelScheduledNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+    }
+  }, [activeNotificationSignature]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        Notifications.dismissNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
         syncRestClock();
       }
     });
@@ -268,6 +490,10 @@ function GymetricApp() {
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (showSettings) {
+        setShowSettings(false);
+        return true;
+      }
       if (setEditorTarget) {
         setSetEditorTarget(null);
         return true;
@@ -320,6 +546,7 @@ function GymetricApp() {
     routineDraft,
     selectedProgressPhoto,
     setEditorTarget,
+    showSettings,
     showFinishConfirm,
     tab,
   ]);
@@ -335,7 +562,7 @@ function GymetricApp() {
       routineExercise.sets.forEach((set, setIndex) => {
         inputMap[getSetKey(routine, exerciseIndex, setIndex)] = {
           reps: set.targetReps.toString(),
-          weightKg: set.targetWeightKg.toString(),
+          weightKg: formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit)),
         };
       });
       return inputMap;
@@ -353,29 +580,100 @@ function GymetricApp() {
         return { ...current, restRemaining: remaining };
       }
 
-      Vibration.vibrate([0, 250, 120, 250]);
+      if (preferences.restVibrationEnabled) {
+        Vibration.vibrate([0, 250, 120, 250]);
+      }
       ToastAndroid.show('Descanso terminado', ToastAndroid.SHORT);
       return { ...current, restRemaining: 0, restEndsAt: null, restNotificationId: null, isResting: false };
     });
   }
 
+  async function updateActiveWorkoutNotification(workout: ActiveWorkout) {
+    const routineExercise = workout.routine.exercises[workout.exerciseIndex];
+    const routineSet = routineExercise?.sets[workout.setIndex];
+    if (!routineExercise || !routineSet) {
+      return;
+    }
+
+    const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
+    const setKey = `${routineExercise.id}:${routineSet.id}`;
+    const input = workout.inputs[setKey];
+    const weight = input?.weightKg || formatDecimal(displayWeight(routineSet.targetWeightKg, preferences.weightUnit));
+    const reps = input?.reps || routineSet.targetReps.toString();
+    const seriesText = `Serie ${workout.setIndex + 1}/${routineExercise.sets.length} · ${weight} ${
+      preferences.weightUnit
+    } × ${reps} reps`;
+
+    const permissions = await Notifications.getPermissionsAsync();
+    if (!permissions.granted) {
+      return;
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: ACTIVE_WORKOUT_NOTIFICATION_ID,
+      content: {
+        title: exercise?.name ?? workout.routine.name,
+        subtitle: 'Gymetric · Entrenamiento activo',
+        body: workout.isResting
+          ? `${seriesText} · Descanso ${formatRestTime(workout.restRemaining)}`
+          : seriesText,
+        data: {
+          type: 'active-workout',
+          routineId: workout.routine.id,
+          exerciseId: routineExercise.exerciseId,
+        },
+        color: '#294BFF',
+        sticky: Platform.OS === 'android',
+        autoDismiss: false,
+        sound: false,
+        priority: Notifications.AndroidNotificationPriority.LOW,
+      },
+      trigger:
+        Platform.OS === 'android'
+          ? {
+              channelId: WORKOUT_NOTIFICATION_CHANNEL_ID,
+            }
+          : null,
+    });
+  }
+
+  function dismissActiveWorkoutNotification() {
+    Notifications.dismissNotificationAsync(ACTIVE_WORKOUT_NOTIFICATION_ID).catch(() => undefined);
+  }
+
   async function scheduleRestNotification(seconds: number) {
+    if (!preferences.restNotificationsEnabled) {
+      return null;
+    }
+
+    await Notifications.cancelScheduledNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+    await Notifications.dismissNotificationAsync(REST_FINISHED_NOTIFICATION_ID).catch(() => undefined);
+
     const permissions = await Notifications.getPermissionsAsync();
     if (!permissions.granted) {
       return null;
     }
 
     return Notifications.scheduleNotificationAsync({
+      identifier: REST_FINISHED_NOTIFICATION_ID,
       content: {
         title: 'Descanso terminado',
+        subtitle: 'Gymetric',
         body: 'Ya puedes empezar la siguiente serie.',
+        data: {
+          type: 'rest-finished',
+        },
+        color: '#294BFF',
         sound: true,
         priority: Notifications.AndroidNotificationPriority.HIGH,
+        vibrate: preferences.restVibrationEnabled ? [0, 250, 120, 250] : undefined,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: Math.max(seconds, 1),
-        channelId: 'rest-timer',
+        channelId: preferences.restVibrationEnabled
+          ? REST_NOTIFICATION_CHANNEL_ID
+          : REST_NOTIFICATION_SOUND_ONLY_CHANNEL_ID,
       },
     });
   }
@@ -383,6 +681,7 @@ function GymetricApp() {
   function cancelRestNotification(notificationId: string | null) {
     if (notificationId) {
       Notifications.cancelScheduledNotificationAsync(notificationId);
+      Notifications.dismissNotificationAsync(notificationId).catch(() => undefined);
     }
   }
 
@@ -486,7 +785,9 @@ function GymetricApp() {
     const actualReps = Number.parseInt(actualInput?.reps ?? '', 10);
     const actualWeight = Number.parseFloat((actualInput?.weightKg ?? '').replace(',', '.'));
     const reps = Number.isFinite(actualReps) ? actualReps : routineSet.targetReps;
-    const weightKg = Number.isFinite(actualWeight) ? actualWeight : routineSet.targetWeightKg;
+    const weightKg = Number.isFinite(actualWeight)
+      ? weightToKg(actualWeight, preferences.weightUnit)
+      : routineSet.targetWeightKg;
     const completedAt = new Date().toISOString();
     const previousBest = getPersonalBest(logs, selectedExercise.id);
     const logId = `log-${completedAt}`;
@@ -659,7 +960,7 @@ function GymetricApp() {
           ...current.inputs,
           [setKey]: {
             reps: previousSet.targetReps.toString(),
-            weightKg: previousSet.targetWeightKg.toString(),
+            weightKg: formatDecimal(displayWeight(previousSet.targetWeightKg, preferences.weightUnit)),
           },
         },
       };
@@ -910,7 +1211,9 @@ function GymetricApp() {
 
   function openBodyProfileEditor() {
     setBodyProfileDraft({
-      heightCm: bodyProfile?.heightCm ? bodyProfile.heightCm.toString() : '',
+      heightCm: bodyProfile?.heightCm
+        ? formatDecimal(displayBodyLength(bodyProfile.heightCm, preferences.bodyUnit))
+        : '',
       age: bodyProfile?.age ? bodyProfile.age.toString() : '',
       sex: bodyProfile?.sex ?? 'male',
     });
@@ -931,7 +1234,8 @@ function GymetricApp() {
       return;
     }
 
-    const heightCm = Number.parseFloat(bodyProfileDraft.heightCm.replace(',', '.')) || 0;
+    const enteredHeight = Number.parseFloat(bodyProfileDraft.heightCm.replace(',', '.')) || 0;
+    const heightCm = bodyLengthToCm(enteredHeight, preferences.bodyUnit);
     const age = Number.parseInt(bodyProfileDraft.age, 10) || 0;
 
     if (!heightCm || !age) {
@@ -959,7 +1263,10 @@ function GymetricApp() {
     const measurement: BodyMeasurement = {
       id: `body-${Date.now()}`,
       measuredAt: new Date().toISOString(),
-      weightKg: Number.parseFloat(bodyMeasurementDraft.weightKg.replace(',', '.')) || 0,
+      weightKg: weightToKg(
+        Number.parseFloat(bodyMeasurementDraft.weightKg.replace(',', '.')) || 0,
+        preferences.weightUnit,
+      ),
       bodyFatPct: Number.parseFloat(bodyMeasurementDraft.bodyFatPct.replace(',', '.')) || 0,
       musclePct: Number.parseFloat(bodyMeasurementDraft.musclePct.replace(',', '.')) || 0,
       bonePct: Number.parseFloat(bodyMeasurementDraft.bonePct.replace(',', '.')) || 0,
@@ -1073,7 +1380,8 @@ function GymetricApp() {
           }
 
           const reps = Number.parseInt(actual.reps, 10);
-          const weightKg = Number.parseFloat(actual.weightKg.replace(',', '.'));
+          const enteredWeight = Number.parseFloat(actual.weightKg.replace(',', '.'));
+          const weightKg = weightToKg(enteredWeight, preferences.weightUnit);
           return {
             ...set,
             targetReps: Number.isFinite(reps) ? reps : set.targetReps,
@@ -1098,28 +1406,144 @@ function GymetricApp() {
     return exercises.find((exercise) => exercise.id === routineExercise.exerciseId) ?? null;
   }, [activeWorkout, exercises]);
 
-  if (!isStorageReady) {
+  async function exportData() {
+    try {
+      const backup = {
+        schemaVersion: 1,
+        exportedAt: new Date().toISOString(),
+        app: 'Gymetric',
+        preferences,
+        data: {
+          ...buildPersistedData(),
+          progressPhotos: [],
+        },
+      };
+      const fileUri = `${FileSystem.cacheDirectory}gymetric-backup-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(backup, null, 2));
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Compartir archivos no está disponible en este dispositivo.');
+      }
+      await Sharing.shareAsync(fileUri, {
+        dialogTitle: 'Exportar copia de Gymetric',
+        mimeType: 'application/json',
+      });
+    } catch (error: unknown) {
+      Alert.alert('No se pudo exportar', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  async function importData() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) {
+        return;
+      }
+      const raw = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const backup = JSON.parse(raw) as {
+        schemaVersion?: number;
+        preferences?: Partial<AppPreferences>;
+        data?: Partial<PersistedData>;
+      };
+      const data = backup.data;
+      if (
+        backup.schemaVersion !== 1 ||
+        !data ||
+        !Array.isArray(data.exercises) ||
+        !Array.isArray(data.routines) ||
+        !Array.isArray(data.logs) ||
+        !Array.isArray(data.achievements) ||
+        !Array.isArray(data.bodyMeasurements)
+      ) {
+        throw new Error('El archivo no es una copia válida de Gymetric.');
+      }
+
+      Alert.alert(
+        'Importar copia',
+        'Se reemplazarán rutinas, ejercicios, entrenamientos y mediciones. Las fotos guardadas en este móvil se conservarán.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Importar',
+            style: 'destructive',
+            onPress: () => {
+              const importedData: PersistedData = {
+                exercises: data.exercises!,
+                routines: data.routines!,
+                logs: data.logs!,
+                achievements: data.achievements!,
+                bodyProfile: data.bodyProfile ?? null,
+                bodyMeasurements: data.bodyMeasurements!,
+                progressPhotos,
+              };
+              replacePersistedData(importedData)
+                .then(() => {
+                  setExercises(importedData.exercises);
+                  setRoutines(importedData.routines);
+                  setLogs(importedData.logs);
+                  setAchievements(importedData.achievements);
+                  setBodyProfile(importedData.bodyProfile);
+                  setBodyMeasurements(importedData.bodyMeasurements);
+                  if (backup.preferences) {
+                    updatePreferences(backup.preferences);
+                  }
+                  Alert.alert('Copia importada', 'Tus datos se han restaurado correctamente.');
+                })
+                .catch((error: unknown) =>
+                  Alert.alert('No se pudo importar', error instanceof Error ? error.message : 'Error desconocido.'),
+                );
+            },
+          },
+        ],
+      );
+    } catch (error: unknown) {
+      Alert.alert('No se pudo importar', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  if (!isStorageReady || !preferencesReady || !minimumLaunchReady) {
     return (
       <View style={styles.loadingScreen}>
-        <StatusBar style="light" />
+        <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} />
+        <Image source={require('../assets/gymetric-icon-dark.png')} style={styles.launchLogo} />
         <Text style={styles.kicker}>Gymetric</Text>
-        <Text style={styles.loadingTitle}>Cargando datos locales</Text>
+        <Text style={styles.loadingTitle}>Entrena con datos claros</Text>
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
+    );
+  }
+
+  if (showSettings) {
+    return (
+      <SettingsScreen
+        close={() => setShowSettings(false)}
+        exportData={exportData}
+        importData={importData}
+      />
     );
   }
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.shell}>
-      <StatusBar style="light" />
+      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} />
       <View style={[styles.header, { paddingTop: Math.max(insets.top + 10, 18) }]}>
         <View style={styles.headerTitle}>
           <Text style={styles.kicker}>Gymetric</Text>
           <Text style={styles.title}>Entrena con datos claros</Text>
         </View>
-        <View style={styles.scorePill}>
-          <Text style={styles.scoreValue}>{achievements.length}</Text>
-          <Text style={styles.scoreLabel}>PRs</Text>
-        </View>
+        <Pressable
+          accessibilityLabel="Abrir ajustes"
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={() => setShowSettings(true)}
+          style={styles.settingsButton}
+        >
+          <MaterialIcons color={colors.text} name="settings" size={26} />
+        </Pressable>
       </View>
 
       {storageError && (
@@ -1297,6 +1721,275 @@ function GymetricApp() {
   );
 }
 
+function SettingsScreen({
+  close,
+  exportData,
+  importData,
+}: {
+  close: () => void;
+  exportData: () => void;
+  importData: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const { colors, preferences, updatePreferences } = useAppSettings();
+
+  async function openExactAlarmSettings() {
+    try {
+      await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.REQUEST_SCHEDULE_EXACT_ALARM, {
+        data: 'package:com.danyk.gymetric',
+      });
+    } catch {
+      Alert.alert(
+        'No se pudieron abrir los ajustes',
+        'Busca Gymetric en Ajustes > Aplicaciones > Acceso especial > Alarmas y recordatorios.',
+      );
+    }
+  }
+
+  return (
+    <View style={styles.settingsScreen}>
+      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} />
+      <View style={[styles.settingsHeader, { paddingTop: Math.max(insets.top + 8, 18) }]}>
+        <Pressable accessibilityLabel="Volver" hitSlop={10} onPress={close} style={styles.settingsBack}>
+          <MaterialIcons color={colors.text} name="arrow-back" size={26} />
+        </Pressable>
+        <Text style={styles.settingsTitle}>Ajustes</Text>
+        <View style={styles.settingsBack} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.settingsContent, { paddingBottom: Math.max(insets.bottom, 18) + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <SettingsSection icon="palette" title="Apariencia">
+          <Text style={styles.settingDescription}>
+            Elige el aspecto de Gymetric. Con “Sistema”, la app seguirá el modo de tu móvil.
+          </Text>
+          <View style={styles.themeChoices}>
+            <ThemeChoice
+              active={preferences.theme === 'system'}
+              icon="brightness-auto"
+              label="Sistema"
+              onPress={() => updatePreferences({ theme: 'system' })}
+            />
+            <ThemeChoice
+              active={preferences.theme === 'light'}
+              icon="light-mode"
+              label="Claro"
+              onPress={() => updatePreferences({ theme: 'light' })}
+            />
+            <ThemeChoice
+              active={preferences.theme === 'dark'}
+              icon="dark-mode"
+              label="Oscuro"
+              onPress={() => updatePreferences({ theme: 'dark' })}
+            />
+          </View>
+        </SettingsSection>
+
+        <SettingsSection icon="straighten" title="Unidades">
+          <UnitSetting
+            label="Peso"
+            options={[
+              { label: 'kg', value: 'kg' },
+              { label: 'lb', value: 'lb' },
+            ]}
+            selected={preferences.weightUnit}
+            onSelect={(weightUnit) => updatePreferences({ weightUnit: weightUnit as AppPreferences['weightUnit'] })}
+          />
+          <UnitSetting
+            label="Distancia"
+            options={[
+              { label: 'km', value: 'km' },
+              { label: 'mi', value: 'mi' },
+            ]}
+            selected={preferences.distanceUnit}
+            onSelect={(distanceUnit) =>
+              updatePreferences({ distanceUnit: distanceUnit as AppPreferences['distanceUnit'] })
+            }
+          />
+          <UnitSetting
+            label="Medidas corporales"
+            options={[
+              { label: 'cm', value: 'cm' },
+              { label: 'in', value: 'in' },
+            ]}
+            selected={preferences.bodyUnit}
+            onSelect={(bodyUnit) => updatePreferences({ bodyUnit: bodyUnit as AppPreferences['bodyUnit'] })}
+          />
+        </SettingsSection>
+
+        <SettingsSection icon="notifications" title="Notificaciones">
+          <SwitchSetting
+            description="Avisa cuando termina el descanso, incluso con la app en segundo plano."
+            label="Temporizador de descanso"
+            value={preferences.restNotificationsEnabled}
+            onValueChange={(restNotificationsEnabled) => updatePreferences({ restNotificationsEnabled })}
+          />
+          <SwitchSetting
+            description="Añade vibración al aviso de fin de descanso."
+            label="Vibración"
+            value={preferences.restVibrationEnabled}
+            onValueChange={(restVibrationEnabled) => updatePreferences({ restVibrationEnabled })}
+          />
+          {Platform.OS === 'android' && (
+            <Pressable onPress={openExactAlarmSettings} style={styles.settingAction}>
+              <MaterialIcons color={colors.primary} name="alarm-on" size={23} />
+              <View style={styles.settingText}>
+                <Text style={styles.settingLabel}>Permitir alarmas precisas</Text>
+                <Text style={styles.settingDescription}>
+                  Evita que Android retrase el aviso cuando termina el descanso.
+                </Text>
+              </View>
+              <MaterialIcons color={colors.textSubtle} name="open-in-new" size={21} />
+            </Pressable>
+          )}
+          <View style={styles.settingRow}>
+            <View style={styles.settingText}>
+              <Text style={styles.settingLabel}>Tono</Text>
+              <Text style={styles.settingDescription}>Predeterminado · más tonos próximamente</Text>
+            </View>
+            <MaterialIcons color={colors.textSubtle} name="chevron-right" size={24} />
+          </View>
+        </SettingsSection>
+
+        <SettingsSection icon="fitness-center" title="Entrenamiento">
+          <SwitchSetting
+            description="Evita que la pantalla se apague mientras entrenas."
+            label="Mantener pantalla activa"
+            value={preferences.keepScreenAwake}
+            onValueChange={(keepScreenAwake) => updatePreferences({ keepScreenAwake })}
+          />
+        </SettingsSection>
+
+        <SettingsSection icon="save-alt" title="Tus datos">
+          <Pressable onPress={exportData} style={styles.settingAction}>
+            <MaterialIcons color={colors.primary} name="ios-share" size={23} />
+            <View style={styles.settingText}>
+              <Text style={styles.settingLabel}>Exportar copia</Text>
+              <Text style={styles.settingDescription}>Guarda rutinas, registros, medidas y preferencias.</Text>
+            </View>
+          </Pressable>
+          <Pressable onPress={importData} style={styles.settingAction}>
+            <MaterialIcons color={colors.primary} name="file-download" size={23} />
+            <View style={styles.settingText}>
+              <Text style={styles.settingLabel}>Importar copia</Text>
+              <Text style={styles.settingDescription}>Las fotos permanecen guardadas solo en este móvil.</Text>
+            </View>
+          </Pressable>
+        </SettingsSection>
+
+        <View style={styles.settingsFooter}>
+          <Text style={styles.kicker}>Gymetric</Text>
+          <Text style={styles.settingDescription}>Versión 1.0.0 · Datos locales y bajo tu control</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function SettingsSection({
+  children,
+  icon,
+  title,
+}: {
+  children: ReactNode;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+}) {
+  const { colors } = useAppSettings();
+  return (
+    <View style={styles.settingsSection}>
+      <View style={styles.settingsSectionHeader}>
+        <View style={styles.settingsSectionIcon}>
+          <MaterialIcons color={colors.primary} name={icon} size={21} />
+        </View>
+        <Text style={styles.settingsSectionTitle}>{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function ThemeChoice({
+  active,
+  icon,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  const { colors } = useAppSettings();
+  return (
+    <Pressable onPress={onPress} style={[styles.themeChoice, active && styles.themeChoiceActive]}>
+      <MaterialIcons color={active ? colors.onPrimary : colors.textMuted} name={icon} size={22} />
+      <Text style={[styles.themeChoiceText, active && styles.themeChoiceTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function UnitSetting({
+  label,
+  onSelect,
+  options,
+  selected,
+}: {
+  label: string;
+  onSelect: (value: string) => void;
+  options: { label: string; value: string }[];
+  selected: string;
+}) {
+  return (
+    <View style={styles.unitSetting}>
+      <Text style={styles.settingLabel}>{label}</Text>
+      <View style={styles.unitOptions}>
+        {options.map((option) => (
+          <Pressable
+            key={option.value}
+            onPress={() => onSelect(option.value)}
+            style={[styles.unitOption, selected === option.value && styles.unitOptionActive]}
+          >
+            <Text style={[styles.unitOptionText, selected === option.value && styles.unitOptionTextActive]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function SwitchSetting({
+  description,
+  label,
+  onValueChange,
+  value,
+}: {
+  description: string;
+  label: string;
+  onValueChange: (value: boolean) => void;
+  value: boolean;
+}) {
+  const { colors } = useAppSettings();
+  return (
+    <View style={styles.settingRow}>
+      <View style={styles.settingText}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingDescription}>{description}</Text>
+      </View>
+      <Switch
+        onValueChange={onValueChange}
+        thumbColor={colors.scheme === 'dark' ? colors.text : '#FFFFFF'}
+        trackColor={{ false: colors.borderStrong, true: colors.primary }}
+        value={value}
+      />
+    </View>
+  );
+}
+
 function TodayScreen({
   addSetToExercise,
   activeExercise,
@@ -1342,6 +2035,7 @@ function TodayScreen({
   updateActualSetValue: (field: 'reps' | 'weightKg', value: string) => void;
   updateSetValueAt: (exerciseIndex: number, setIndex: number, field: 'reps' | 'weightKg', value: string) => void;
 }) {
+  const { preferences } = useAppSettings();
   if (activeWorkout && activeExercise) {
     const routineExercise = activeWorkout.routine.exercises[activeWorkout.exerciseIndex];
     const set = routineExercise.sets[activeWorkout.setIndex];
@@ -1401,7 +2095,9 @@ function TodayScreen({
                 onChangeText={(value) => updateActualSetValue('reps', value)}
               />
               <ActualInput
-                label={`Kg objetivo ${set.targetWeightKg}`}
+                label={`${preferences.weightUnit} objetivo ${formatDecimal(
+                  displayWeight(set.targetWeightKg, preferences.weightUnit),
+                )}`}
                 value={actualInput?.weightKg ?? ''}
                 onChangeText={(value) => updateActualSetValue('weightKg', value)}
               />
@@ -1495,6 +2191,7 @@ function WorkoutOverview({
   uncompleteSetAt: (exerciseIndex: number, setIndex: number) => void;
   updateSetValueAt: (exerciseIndex: number, setIndex: number, field: 'reps' | 'weightKg', value: string) => void;
 }) {
+  const { preferences } = useAppSettings();
   return (
     <View style={styles.stack}>
       {activeWorkout.routine.exercises.map((routineExercise, exerciseIndex) => {
@@ -1521,7 +2218,7 @@ function WorkoutOverview({
             </View>
             <View style={styles.setTableHeader}>
               <Text style={styles.setColumnSmall}>Serie</Text>
-              <Text style={styles.setColumn}>Kg</Text>
+              <Text style={styles.setColumn}>{preferences.weightUnit}</Text>
               <Text style={styles.setColumn}>Reps</Text>
               <Text style={styles.setColumnSmall}>OK</Text>
             </View>
@@ -1555,7 +2252,10 @@ function WorkoutOverview({
                       keyboardType="decimal-pad"
                       selectTextOnFocus
                       style={[styles.setCellInput, isDone && styles.completedSetText]}
-                      value={input?.weightKg ?? set.targetWeightKg.toString()}
+                      value={
+                        input?.weightKg ??
+                        formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))
+                      }
                       onChangeText={(value) => updateSetValueAt(exerciseIndex, setIndex, 'weightKg', value)}
                     />
                     <TextInput
@@ -1589,6 +2289,7 @@ function WorkoutOverview({
 }
 
 function WorkoutStats({ activeWorkout }: { activeWorkout: ActiveWorkout }) {
+  const { preferences } = useAppSettings();
   const volume = activeWorkout.completedSetIds.reduce((total, setKey) => {
     const input = activeWorkout.inputs[setKey];
     const reps = Number.parseFloat(input?.reps ?? '0');
@@ -1599,7 +2300,7 @@ function WorkoutStats({ activeWorkout }: { activeWorkout: ActiveWorkout }) {
   return (
     <View style={styles.sessionStats}>
       <Metric label="Duracion" value={formatRestTime(activeWorkout.elapsedSeconds)} />
-      <Metric label="Volumen" value={`${Math.round(volume)} kg`} />
+      <Metric label="Volumen" value={`${Math.round(volume)} ${preferences.weightUnit}`} />
       <Metric label="Series" value={activeWorkout.completedSetIds.length.toString()} />
     </View>
   );
@@ -1881,6 +2582,7 @@ function RoutineEditorModal({
   save: () => void;
   setDraft: Dispatch<SetStateAction<RoutineDraft | null>>;
 }) {
+  const { colors, preferences } = useAppSettings();
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<string[]>([]);
 
   if (!draft) {
@@ -2000,14 +2702,22 @@ function RoutineEditorModal({
 
   return (
     <Modal transparent animationType="slide" visible onRequestClose={close}>
-      <View style={styles.modalScrim}>
-        <DraggableFlatList
-          activationDistance={1}
-          containerStyle={styles.editorCard}
-          contentContainerStyle={styles.editorContent}
-          data={draft.exercises}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={
+      <GestureHandlerRootView style={styles.gestureRoot}>
+        <View style={styles.modalScrim}>
+          <DraggableFlatList
+            activationDistance={12}
+            animationConfig={{
+              damping: 28,
+              energyThreshold: 0.001,
+              mass: 0.15,
+              overshootClamping: true,
+              stiffness: 260,
+            }}
+            containerStyle={styles.editorCard}
+            contentContainerStyle={styles.editorContent}
+            data={draft.exercises}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={
             <>
               <Text style={styles.modalTitle}>{draft.id ? 'Editar rutina' : 'Nueva rutina'}</Text>
               <TextInput
@@ -2050,8 +2760,8 @@ function RoutineEditorModal({
 
               <Text style={styles.editorLabel}>Rutina</Text>
             </>
-          }
-          ListFooterComponent={
+            }
+            ListFooterComponent={
             <>
               <View style={styles.modalActions}>
                 <Pressable style={styles.modalSecondary} onPress={close}>
@@ -2067,43 +2777,89 @@ function RoutineEditorModal({
                 </Pressable>
               )}
             </>
-          }
-          onDragEnd={({ data }) => reorderExercises(data)}
-          renderItem={({ item: routineExercise, drag, isActive, getIndex }: RenderItemParams<RoutineExercise>) => {
+            }
+            onDragEnd={({ data }) => reorderExercises(data)}
+            renderItem={({
+            item: routineExercise,
+            drag,
+            isActive,
+            getIndex,
+          }: RenderItemParams<RoutineExercise>) => {
             const exerciseIndex = getIndex() ?? 0;
             const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
             const isCollapsed = collapsedExerciseIds.includes(routineExercise.id);
             return (
-              <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockActive]}>
-                <View style={styles.routineEditorHeader}>
-                  <Pressable style={styles.headerTitle} onPress={() => toggleExerciseCollapsed(routineExercise.id)}>
-                    <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
-                    <Text style={styles.muted}>
-                      {routineExercise.sets.length} series · {isCollapsed ? 'Plegado' : 'Desplegado'}
-                    </Text>
-                  </Pressable>
-                  <Pressable style={styles.dragHandle} onPressIn={drag}>
-                    <Text style={styles.dragHandleText}>≡</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, -1)}>
-                    <Text style={styles.smallSquareButtonText}>↑</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => moveExercise(exerciseIndex, 1)}>
-                    <Text style={styles.smallSquareButtonText}>↓</Text>
-                  </Pressable>
-                  <Pressable style={styles.smallSquareButton} onPress={() => removeExerciseFromRoutine(exerciseIndex)}>
-                    <Text style={styles.smallSquareButtonText}>×</Text>
-                  </Pressable>
-                </View>
-                {!isCollapsed && (
-                  <>
+              <ScaleDecorator activeScale={1.015}>
+                <ShadowDecorator elevation={16} opacity={0.32} radius={12}>
+                  <View style={[styles.routineEditorBlock, isActive && styles.routineEditorBlockDragging]}>
+                    <Pressable
+                  accessibilityLabel={`${isCollapsed ? 'Desplegar' : 'Plegar'} ${exercise?.name ?? 'ejercicio'}`}
+                  accessibilityHint="Mantén pulsado para cambiar su posición"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: !isCollapsed }}
+                  delayLongPress={250}
+                  disabled={isActive}
+                  style={styles.routineEditorTitleRow}
+                  onLongPress={() => {
+                    Vibration.vibrate(30);
+                    drag();
+                  }}
+                  onPress={() => {
+                    if (!isActive) {
+                      toggleExerciseCollapsed(routineExercise.id);
+                    }
+                  }}
+                    >
+                      <MaterialIcons
+                        color={colors.primary}
+                        name={isCollapsed ? 'chevron-right' : 'expand-more'}
+                        size={24}
+                      />
+                      <View style={styles.headerTitle}>
+                        <Text style={styles.exerciseRowName}>{exercise?.name ?? 'Ejercicio'}</Text>
+                        <Text style={styles.muted}>{routineExercise.sets.length} series</Text>
+                      </View>
+                    </Pressable>
+                    <View style={styles.routineEditorControls}>
+                      <Pressable
+                    accessibilityLabel="Subir ejercicio"
+                    accessibilityRole="button"
+                    disabled={exerciseIndex === 0}
+                    style={[styles.smallSquareButton, exerciseIndex === 0 && styles.controlButtonDisabled]}
+                    onPress={() => moveExercise(exerciseIndex, -1)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>↑</Text>
+                      </Pressable>
+                      <Pressable
+                    accessibilityLabel="Bajar ejercicio"
+                    accessibilityRole="button"
+                    disabled={exerciseIndex === draft.exercises.length - 1}
+                    style={[
+                      styles.smallSquareButton,
+                      exerciseIndex === draft.exercises.length - 1 && styles.controlButtonDisabled,
+                    ]}
+                    onPress={() => moveExercise(exerciseIndex, 1)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>↓</Text>
+                      </Pressable>
+                      <Pressable
+                    accessibilityLabel="Eliminar ejercicio de la rutina"
+                    accessibilityRole="button"
+                    style={styles.smallSquareButton}
+                    onPress={() => removeExerciseFromRoutine(exerciseIndex)}
+                      >
+                        <Text style={styles.smallSquareButtonText}>×</Text>
+                      </Pressable>
+                    </View>
+                    {!isCollapsed && (
+                      <>
                     <RestTimeInput
                       restSeconds={routineExercise.restSeconds}
                       onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
                     />
                     <View style={styles.routineSetHeader}>
                       <Text style={styles.routineSetIndexHeader}>Tipo</Text>
-                      <Text style={styles.routineSetColumnHeader}>Kg</Text>
+                      <Text style={styles.routineSetColumnHeader}>{preferences.weightUnit}</Text>
                       <Text style={styles.routineSetColumnHeader}>Reps</Text>
                       <Text style={styles.routineSetActionHeader}>Del</Text>
                     </View>
@@ -2119,13 +2875,16 @@ function RoutineEditorModal({
                         </Pressable>
                         <TextInput
                           keyboardType="decimal-pad"
-                          placeholder="Kg"
+                          placeholder={preferences.weightUnit}
                           placeholderTextColor="#7C8797"
                           style={styles.routineSetInput}
-                          value={set.targetWeightKg.toString()}
-                          onChangeText={(targetWeightKg) =>
+                          value={formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))}
+                          onChangeText={(targetWeight) =>
                             updateSet(exerciseIndex, setIndex, {
-                              targetWeightKg: Number.parseFloat(targetWeightKg.replace(',', '.')) || 0,
+                              targetWeightKg: weightToKg(
+                                Number.parseFloat(targetWeight.replace(',', '.')) || 0,
+                                preferences.weightUnit,
+                              ),
                             })
                           }
                         />
@@ -2147,13 +2906,16 @@ function RoutineEditorModal({
                     <Pressable style={styles.addSetButton} onPress={() => addRoutineSet(exerciseIndex)}>
                       <Text style={styles.addSetButtonText}>+ Agregar serie</Text>
                     </Pressable>
-                  </>
-                )}
-              </View>
+                      </>
+                    )}
+                  </View>
+                </ShadowDecorator>
+              </ScaleDecorator>
             );
-          }}
-        />
-      </View>
+            }}
+          />
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -2169,6 +2931,7 @@ function WorkoutSummaryModal({
   save: () => void;
   summary: WorkoutSummary | null;
 }) {
+  const { preferences } = useAppSettings();
   if (!summary) {
     return null;
   }
@@ -2182,7 +2945,10 @@ function WorkoutSummaryModal({
           <Text style={styles.modalTitle}>Resumen del entrenamiento</Text>
           <View style={styles.sessionStats}>
             <Metric label="Duracion" value={formatRestTime(summary.elapsedSeconds)} />
-            <Metric label="Volumen" value={`${Math.round(volume)} kg`} />
+            <Metric
+              label="Volumen"
+              value={`${Math.round(displayWeight(volume, preferences.weightUnit))} ${preferences.weightUnit}`}
+            />
             <Metric label="Series" value={summary.logs.length.toString()} />
           </View>
 
@@ -2196,7 +2962,8 @@ function WorkoutSummaryModal({
                   <Text style={styles.muted}>{log.kind}</Text>
                 </View>
                 <Text style={styles.summaryValue}>
-                  {log.weightKg} kg x {log.reps}
+                  {formatDecimal(displayWeight(log.weightKg, preferences.weightUnit))} {preferences.weightUnit} x{' '}
+                  {log.reps}
                 </Text>
               </View>
             );
@@ -2254,7 +3021,10 @@ function ProgressScreen({
   openProgressPhoto: (photo: ProgressPhoto) => void;
   progressPhotos: ProgressPhoto[];
 }) {
+  const { colors, preferences } = useAppSettings();
   const [openPhotoGroupKey, setOpenPhotoGroupKey] = useState<string | null>(null);
+  const [areRecordsExpanded, setAreRecordsExpanded] = useState(false);
+  const [areAchievementsExpanded, setAreAchievementsExpanded] = useState(false);
   const latestMeasurement = getLatestMeasurement(bodyMeasurements);
   const bmi = calculateBmi(bodyProfile, latestMeasurement);
   const bmiSummary = getBmiSummary(bmi);
@@ -2276,7 +3046,16 @@ function ProgressScreen({
           </Pressable>
         </View>
         <View style={styles.bodyProfileRow}>
-          <Metric label="Altura" value={bodyProfile?.heightCm ? `${bodyProfile.heightCm} cm` : '--'} />
+          <Metric
+            label="Altura"
+            value={
+              bodyProfile?.heightCm
+                ? `${formatDecimal(displayBodyLength(bodyProfile.heightCm, preferences.bodyUnit))} ${
+                    preferences.bodyUnit
+                  }`
+                : '--'
+            }
+          />
           <Metric label="Edad" value={bodyProfile?.age ? `${bodyProfile.age}` : '--'} />
           <Metric label="Sexo" value={bodySex === 'female' ? 'Mujer' : 'Hombre'} />
           <Metric label="Mediciones" value={bodyMeasurements.length.toString()} />
@@ -2293,10 +3072,14 @@ function ProgressScreen({
         </View>
         <View style={styles.weightSummaryRow}>
           <View>
-            <Text style={styles.bigMetric}>{latestMeasurement ? latestMeasurement.weightKg.toFixed(1) : '--'}</Text>
-            <Text style={styles.metricLabel}>kg</Text>
+            <Text style={styles.bigMetric}>
+              {latestMeasurement
+                ? formatDecimal(displayWeight(latestMeasurement.weightKg, preferences.weightUnit))
+                : '--'}
+            </Text>
+            <Text style={styles.metricLabel}>{preferences.weightUnit}</Text>
           </View>
-          <Sparkline measurements={weightHistory} metric="weightKg" color="#F4B860" />
+          <Sparkline measurements={weightHistory} metric="weightKg" color={colors.warning} />
         </View>
       </View>
 
@@ -2350,8 +3133,11 @@ function ProgressScreen({
         </View>
         {!!referenceHeight && !!bodyProfile?.heightCm && Math.abs(bodyProfile.heightCm - referenceHeight) > 5 && (
           <Text style={styles.bmiHint}>
-            Con {latestMeasurement?.weightKg.toFixed(1)} kg y {bodyProfile.heightCm} cm, este IMC es correcto. Para un IMC
-            cercano a 23.7 la altura seria aprox. {Math.round(referenceHeight)} cm.
+            Con{' '}
+            {formatDecimal(displayWeight(latestMeasurement?.weightKg ?? 0, preferences.weightUnit))}{' '}
+            {preferences.weightUnit} y {formatDecimal(displayBodyLength(bodyProfile.heightCm, preferences.bodyUnit))}{' '}
+            {preferences.bodyUnit}, este IMC es correcto. Para un IMC cercano a 23.7 la altura sería aprox.{' '}
+            {formatDecimal(displayBodyLength(referenceHeight, preferences.bodyUnit), 0)} {preferences.bodyUnit}.
           </Text>
         )}
       </View>
@@ -2377,7 +3163,11 @@ function ProgressScreen({
                   <Text style={styles.photoGroupTitle}>{group.title}</Text>
                   <Text style={styles.muted}>{group.photos.length} fotos</Text>
                 </View>
-                <Text style={styles.folderChevron}>{openPhotoGroupKey === group.key ? '−' : '+'}</Text>
+                <MaterialIcons
+                  color={colors.primary}
+                  name={openPhotoGroupKey === group.key ? 'expand-more' : 'chevron-right'}
+                  size={24}
+                />
               </Pressable>
               {openPhotoGroupKey === group.key && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
@@ -2405,7 +3195,8 @@ function ProgressScreen({
             <View style={styles.headerTitle}>
               <Text style={styles.panelTitle}>{formatMeasurementDate(measurement.measuredAt)}</Text>
               <Text style={styles.muted}>
-                {measurement.weightKg} kg · grasa {measurement.bodyFatPct}% · musculo {measurement.musclePct}% · agua{' '}
+                {formatDecimal(displayWeight(measurement.weightKg, preferences.weightUnit))} {preferences.weightUnit} ·
+                grasa {measurement.bodyFatPct}% · musculo {measurement.musclePct}% · agua{' '}
                 {measurement.waterPct}%
               </Text>
             </View>
@@ -2418,26 +3209,65 @@ function ProgressScreen({
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>Records por ejercicio</Text>
-        {exercises.map((exercise) => (
-          <View key={exercise.id} style={styles.progressRow}>
-            <Text style={styles.progressName}>{exercise.name}</Text>
-            <Text style={styles.progressValue}>{getPersonalBest(logs, exercise.id)} kg</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: areRecordsExpanded }}
+          style={styles.collapsibleHeader}
+          onPress={() => setAreRecordsExpanded((current) => !current)}
+        >
+          <View style={styles.collapsibleContent}>
+            <View style={styles.collapsibleTitleRow}>
+              <Text style={styles.collapsibleTitle}>Récords por ejercicio</Text>
+              <MaterialIcons
+                color={colors.primary}
+                name={areRecordsExpanded ? 'expand-more' : 'chevron-right'}
+                size={24}
+              />
+            </View>
+            <Text style={styles.muted}>{exercises.length} ejercicios</Text>
           </View>
-        ))}
+        </Pressable>
+        {areRecordsExpanded &&
+          exercises.map((exercise) => (
+            <View key={exercise.id} style={styles.progressRow}>
+              <Text style={styles.progressName}>{exercise.name}</Text>
+              <Text style={styles.progressValue}>
+                {formatDecimal(displayWeight(getPersonalBest(logs, exercise.id), preferences.weightUnit))}{' '}
+                {preferences.weightUnit}
+              </Text>
+            </View>
+          ))}
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>Medallas</Text>
-        {achievements.map((achievement) => (
-          <View key={achievement.id} style={styles.medal}>
-            <Text style={styles.medalIcon}>PR</Text>
-            <View style={styles.medalText}>
-              <Text style={styles.panelTitle}>{achievement.title}</Text>
-              <Text style={styles.muted}>{achievement.description}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: areAchievementsExpanded }}
+          style={styles.collapsibleHeader}
+          onPress={() => setAreAchievementsExpanded((current) => !current)}
+        >
+          <View style={styles.collapsibleContent}>
+            <View style={styles.collapsibleTitleRow}>
+              <Text style={styles.collapsibleTitle}>Medallas</Text>
+              <MaterialIcons
+                color={colors.primary}
+                name={areAchievementsExpanded ? 'expand-more' : 'chevron-right'}
+                size={24}
+              />
             </View>
+            <Text style={styles.muted}>{achievements.length} conseguidas</Text>
           </View>
-        ))}
+        </Pressable>
+        {areAchievementsExpanded &&
+          achievements.map((achievement) => (
+            <View key={achievement.id} style={styles.medal}>
+              <Text style={styles.medalIcon}>PR</Text>
+              <View style={styles.medalText}>
+                <Text style={styles.panelTitle}>{achievement.title}</Text>
+                <Text style={styles.muted}>{achievement.description}</Text>
+              </View>
+            </View>
+          ))}
       </View>
     </View>
   );
@@ -2454,6 +3284,7 @@ function BodyProfileModal({
   save: () => void;
   setDraft: Dispatch<SetStateAction<BodyProfileDraft | null>>;
 }) {
+  const { preferences } = useAppSettings();
   if (!draft) {
     return null;
   }
@@ -2465,7 +3296,7 @@ function BodyProfileModal({
           <Text style={styles.modalTitle}>Datos personales</Text>
           <TextInput
             keyboardType="decimal-pad"
-            placeholder="Altura en cm"
+            placeholder={`Altura en ${preferences.bodyUnit}`}
             placeholderTextColor="#7C8797"
             style={styles.editorInput}
             value={draft.heightCm}
@@ -2573,6 +3404,7 @@ function BodyMeasurementModal({
   save: () => void;
   setDraft: Dispatch<SetStateAction<BodyMeasurementDraft | null>>;
 }) {
+  const { preferences } = useAppSettings();
   if (!draft) {
     return null;
   }
@@ -2583,7 +3415,11 @@ function BodyMeasurementModal({
         <ScrollView style={styles.editorCard} contentContainerStyle={styles.editorContent}>
           <Text style={styles.modalTitle}>Nueva medicion</Text>
           <Text style={styles.muted}>La fecha se guarda automaticamente con el momento actual.</Text>
-          <MeasurementInput label="Peso kg" value={draft.weightKg} onChange={(weightKg) => setDraft((current) => (current ? { ...current, weightKg } : current))} />
+          <MeasurementInput
+            label={`Peso ${preferences.weightUnit}`}
+            value={draft.weightKg}
+            onChange={(weightKg) => setDraft((current) => (current ? { ...current, weightKg } : current))}
+          />
           <MeasurementInput label="Grasa %" value={draft.bodyFatPct} onChange={(bodyFatPct) => setDraft((current) => (current ? { ...current, bodyFatPct } : current))} />
           <MeasurementInput label="Musculo %" value={draft.musclePct} onChange={(musclePct) => setDraft((current) => (current ? { ...current, musclePct } : current))} />
           <MeasurementInput label="Hueso %" value={draft.bonePct} onChange={(bonePct) => setDraft((current) => (current ? { ...current, bonePct } : current))} />
@@ -2757,7 +3593,9 @@ function ExerciseRow({ exercise }: { exercise: Exercise }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metric}>
-      <Text style={styles.metricValue}>{value}</Text>
+      <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={styles.metricValue}>
+        {value}
+      </Text>
       <Text style={styles.metricLabel}>{label}</Text>
     </View>
   );
@@ -2779,36 +3617,195 @@ function TabButton({ active, label, onPress }: { active: boolean; label: string;
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: ThemeColors) {
+  return StyleSheet.create({
+  settingsScreen: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  settingsHeader: {
+    minHeight: 76,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border,
+    backgroundColor: theme.background,
+  },
+  settingsBack: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  settingsTitle: {
+    color: theme.text,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  settingsContent: {
+    padding: 18,
+    gap: 16,
+  },
+  settingsSection: {
+    padding: 18,
+    gap: 16,
+    borderRadius: 18,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  settingsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+  },
+  settingsSectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceElevated,
+  },
+  settingsSectionTitle: {
+    color: theme.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  themeChoices: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  themeChoice: {
+    flex: 1,
+    minHeight: 76,
+    borderRadius: 14,
+    gap: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.surfaceElevated,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  themeChoiceActive: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  themeChoiceText: {
+    color: theme.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  themeChoiceTextActive: {
+    color: theme.onPrimary,
+  },
+  unitSetting: {
+    gap: 8,
+  },
+  unitOptions: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: 12,
+    backgroundColor: theme.surfaceElevated,
+  },
+  unitOption: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unitOptionActive: {
+    backgroundColor: theme.primary,
+  },
+  unitOptionText: {
+    color: theme.textMuted,
+    fontWeight: '900',
+  },
+  unitOptionTextActive: {
+    color: theme.onPrimary,
+  },
+  settingRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  settingAction: {
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 4,
+  },
+  settingText: {
+    flex: 1,
+    gap: 3,
+  },
+  settingLabel: {
+    color: theme.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  settingDescription: {
+    color: theme.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  settingsFooter: {
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 18,
+  },
   shell: {
     flex: 1,
-    backgroundColor: '#101418',
+    backgroundColor: resolveLegacyColor('#101418', theme),
   },
   gestureRoot: {
     flex: 1,
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: '#101418',
+    backgroundColor: resolveLegacyColor('#101418', theme),
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    gap: 12,
+  },
+  launchLogo: {
+    width: 152,
+    height: 152,
+    borderRadius: 34,
+    marginBottom: 4,
   },
   loadingTitle: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 22,
     fontWeight: '900',
-    marginTop: 8,
+    marginBottom: 8,
   },
   storageBanner: {
     marginHorizontal: 20,
     marginBottom: 8,
     borderRadius: 8,
-    backgroundColor: '#D84A4A',
+    backgroundColor: resolveLegacyColor('#D84A4A', theme),
     padding: 10,
   },
   storageBannerText: {
-    color: '#FFFFFF',
+    color: resolveLegacyColor('#FFFFFF', theme),
     fontWeight: '900',
     textAlign: 'center',
   },
@@ -2824,34 +3821,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   kicker: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 13,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   title: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 26,
     fontWeight: '900',
     marginTop: 4,
-  },
-  scorePill: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: '#F0B35B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreValue: {
-    color: '#16110A',
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  scoreLabel: {
-    color: '#16110A',
-    fontSize: 11,
-    fontWeight: '800',
   },
   content: {
     padding: 20,
@@ -2860,21 +3839,21 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   hero: {
-    backgroundColor: '#1B242B',
+    backgroundColor: resolveLegacyColor('#1B242B', theme),
     borderRadius: 8,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#2D3A43',
+    borderColor: resolveLegacyColor('#2D3A43', theme),
   },
   panel: {
-    backgroundColor: '#172027',
+    backgroundColor: resolveLegacyColor('#172027', theme),
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
   },
   workoutCard: {
-    backgroundColor: '#EAF2EE',
+    backgroundColor: resolveLegacyColor('#EAF2EE', theme),
     borderRadius: 8,
     padding: 18,
     gap: 16,
@@ -2885,55 +3864,55 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionLabel: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 12,
     fontWeight: '900',
     marginBottom: 8,
     textTransform: 'uppercase',
   },
   eyebrow: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   h1: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 32,
     fontWeight: '900',
   },
   h2: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 24,
     fontWeight: '900',
   },
   heroCopy: {
-    color: '#BAC6CF',
+    color: resolveLegacyColor('#BAC6CF', theme),
     fontSize: 16,
     lineHeight: 23,
     marginTop: 8,
     marginBottom: 18,
   },
   panelTitle: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 18,
     fontWeight: '900',
   },
   muted: {
-    color: '#9BA8B4',
+    color: resolveLegacyColor('#9BA8B4', theme),
     fontSize: 13,
     lineHeight: 19,
   },
   primaryButton: {
     minHeight: 52,
     borderRadius: 8,
-    backgroundColor: '#7DD3C7',
+    backgroundColor: resolveLegacyColor('#7DD3C7', theme),
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: '#071313',
+    color: resolveLegacyColor('#071313', theme),
     fontWeight: '900',
     fontSize: 15,
   },
@@ -2942,12 +3921,12 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#7DD3C7',
+    borderColor: resolveLegacyColor('#7DD3C7', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontWeight: '900',
   },
   actionRow: {
@@ -2960,7 +3939,7 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#7DD3C7',
+    borderColor: resolveLegacyColor('#7DD3C7', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2968,39 +3947,39 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 46,
     borderRadius: 8,
-    backgroundColor: '#7DD3C7',
+    backgroundColor: resolveLegacyColor('#7DD3C7', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   compactButton: {
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#7DD3C7',
+    backgroundColor: resolveLegacyColor('#7DD3C7', theme),
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
   compactButtonText: {
-    color: '#071313',
+    color: resolveLegacyColor('#071313', theme),
     fontWeight: '900',
   },
   endButton: {
     minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#F0B35B',
+    borderColor: resolveLegacyColor('#F0B35B', theme),
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   endButtonText: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontSize: 12,
     fontWeight: '900',
   },
   segmented: {
     marginTop: 16,
-    backgroundColor: '#0F151A',
+    backgroundColor: resolveLegacyColor('#0F151A', theme),
     borderRadius: 8,
     flexDirection: 'row',
     padding: 4,
@@ -3014,14 +3993,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeSegment: {
-    backgroundColor: '#EAF2EE',
+    backgroundColor: resolveLegacyColor('#EAF2EE', theme),
   },
   segmentText: {
-    color: '#8F9CA7',
+    color: resolveLegacyColor('#8F9CA7', theme),
     fontWeight: '900',
   },
   activeSegmentText: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
   },
   statsRow: {
     flexDirection: 'row',
@@ -3032,20 +4011,22 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   metric: {
-    flex: 1,
-    backgroundColor: '#222D35',
+    width: '48%',
+    minHeight: 92,
+    backgroundColor: resolveLegacyColor('#222D35', theme),
     borderRadius: 8,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#31404A',
+    borderColor: resolveLegacyColor('#31404A', theme),
+    justifyContent: 'space-between',
   },
   metricValue: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 24,
     fontWeight: '900',
   },
   metricLabel: {
-    color: '#AAB6C1',
+    color: resolveLegacyColor('#AAB6C1', theme),
     fontSize: 12,
     marginTop: 4,
     fontWeight: '700',
@@ -3056,47 +4037,49 @@ const styles = StyleSheet.create({
   },
   actualInputBox: {
     flex: 1,
-    backgroundColor: '#DDE8E3',
+    backgroundColor: resolveLegacyColor('#DDE8E3', theme),
     borderRadius: 8,
     padding: 12,
   },
   actualInputLabel: {
-    color: '#52606A',
+    color: resolveLegacyColor('#52606A', theme),
     fontSize: 12,
     fontWeight: '900',
     marginBottom: 8,
   },
   actualInput: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
     fontSize: 26,
     fontWeight: '900',
     minHeight: 42,
     padding: 0,
   },
   exerciseName: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
     fontSize: 28,
     fontWeight: '900',
   },
   setMeta: {
-    color: '#54616B',
+    color: resolveLegacyColor('#54616B', theme),
     fontSize: 14,
     fontWeight: '800',
   },
   restBox: {
     borderRadius: 8,
     padding: 18,
-    backgroundColor: '#111A1F',
+    backgroundColor: theme.surfaceElevated,
+    borderWidth: 1,
+    borderColor: theme.borderStrong,
     alignItems: 'center',
   },
   restLabel: {
-    color: '#F0B35B',
+    color: theme.warning,
     fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   restTime: {
-    color: '#F7FAFC',
+    color: theme.text,
     fontSize: 42,
     fontWeight: '900',
     marginTop: 4,
@@ -3112,19 +4095,20 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#52616B',
+    borderColor: theme.borderStrong,
+    backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   timerButtonText: {
-    color: '#D7E0E7',
+    color: theme.text,
     fontWeight: '900',
   },
   timerButtonPrimary: {
     flex: 1,
     minHeight: 44,
     borderRadius: 8,
-    backgroundColor: '#F0B35B',
+    backgroundColor: theme.warning,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3138,9 +4122,9 @@ const styles = StyleSheet.create({
     right: 14,
     minHeight: 66,
     borderRadius: 8,
-    backgroundColor: '#111A1F',
+    backgroundColor: theme.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#2F3E48',
+    borderColor: theme.borderStrong,
     padding: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -3150,12 +4134,12 @@ const styles = StyleSheet.create({
     width: 54,
     minHeight: 46,
     borderRadius: 8,
-    backgroundColor: '#222D35',
+    backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinnedTimerButtonText: {
-    color: '#D7E0E7',
+    color: theme.text,
     fontWeight: '900',
   },
   pinnedTimerCenter: {
@@ -3163,55 +4147,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pinnedTimerLabel: {
-    color: '#F0B35B',
+    color: theme.warning,
     fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   pinnedTimerValue: {
-    color: '#F7FAFC',
+    color: theme.text,
     fontSize: 26,
     fontWeight: '900',
   },
   pinnedTimerSkip: {
     minHeight: 46,
     borderRadius: 8,
-    backgroundColor: '#7DD3C7',
+    backgroundColor: theme.primary,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pinnedTimerSkipText: {
-    color: '#071313',
+    color: theme.onPrimary,
     fontWeight: '900',
   },
   overviewTimer: {
     borderRadius: 8,
-    backgroundColor: '#111A1F',
+    backgroundColor: theme.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#2F3E48',
+    borderColor: theme.borderStrong,
     padding: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   overviewTimerLabel: {
-    color: '#F0B35B',
+    color: theme.warning,
     fontWeight: '900',
     textTransform: 'uppercase',
     fontSize: 12,
   },
   overviewTimerValue: {
-    color: '#F7FAFC',
+    color: theme.text,
     fontSize: 26,
     fontWeight: '900',
   },
   exercisePanel: {
-    backgroundColor: '#172027',
+    backgroundColor: resolveLegacyColor('#172027', theme),
     borderRadius: 8,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
   },
   overviewHeader: {
     flexDirection: 'row',
@@ -3220,15 +4204,15 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   overviewExercise: {
-    color: '#D8E1E8',
+    color: resolveLegacyColor('#D8E1E8', theme),
     fontSize: 20,
     fontWeight: '900',
   },
   currentOverviewExercise: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
   },
   overviewRest: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 14,
     fontWeight: '800',
     marginTop: 8,
@@ -3236,13 +4220,13 @@ const styles = StyleSheet.create({
   skipExerciseButton: {
     minHeight: 38,
     borderRadius: 8,
-    backgroundColor: '#26343D',
+    backgroundColor: resolveLegacyColor('#26343D', theme),
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipExerciseButtonText: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontWeight: '900',
     fontSize: 12,
   },
@@ -3251,31 +4235,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#2B3943',
+    borderBottomColor: resolveLegacyColor('#2B3943', theme),
   },
   setRow: {
     minHeight: 54,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#24313A',
+    borderBottomColor: resolveLegacyColor('#24313A', theme),
   },
   currentSetRow: {
-    backgroundColor: '#25353A',
+    backgroundColor: resolveLegacyColor('#25353A', theme),
   },
   completedSetRow: {
-    backgroundColor: '#BDFCA1',
+    backgroundColor: resolveLegacyColor('#BDFCA1', theme),
   },
   setColumnSmall: {
     width: 54,
-    color: '#87939D',
+    color: resolveLegacyColor('#87939D', theme),
     fontWeight: '900',
     fontSize: 12,
     textTransform: 'uppercase',
   },
   setColumn: {
     flex: 1,
-    color: '#87939D',
+    color: resolveLegacyColor('#87939D', theme),
     fontWeight: '900',
     fontSize: 12,
     textTransform: 'uppercase',
@@ -3286,23 +4270,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   setColumnSmallValue: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 18,
     fontWeight: '900',
     paddingLeft: 4,
   },
   warmupSetKind: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
   },
   failureSetKind: {
-    color: '#D84A4A',
+    color: resolveLegacyColor('#D84A4A', theme),
   },
   dropSetKind: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
   },
   setCellInput: {
     flex: 1,
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 18,
     fontWeight: '900',
     minHeight: 52,
@@ -3311,48 +4295,48 @@ const styles = StyleSheet.create({
   },
   setColumnValue: {
     flex: 1,
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 18,
     fontWeight: '900',
   },
   completedSetText: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
   },
   checkMarkButton: {
     width: 42,
     height: 34,
     borderRadius: 8,
-    backgroundColor: '#E7EAEE',
+    backgroundColor: resolveLegacyColor('#E7EAEE', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkMarkDone: {
-    backgroundColor: '#33B93B',
+    backgroundColor: resolveLegacyColor('#33B93B', theme),
   },
   checkMarkText: {
-    color: '#A5ADB5',
+    color: resolveLegacyColor('#A5ADB5', theme),
     fontSize: 22,
     fontWeight: '900',
   },
   checkMarkTextDone: {
-    color: '#FFFFFF',
+    color: resolveLegacyColor('#FFFFFF', theme),
   },
   addSetButton: {
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#222D35',
+    backgroundColor: resolveLegacyColor('#222D35', theme),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
   },
   addSetButtonText: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 16,
     fontWeight: '900',
   },
   modalScrim: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.58)',
+    backgroundColor: theme.scrim,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -3360,23 +4344,23 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     borderRadius: 8,
-    backgroundColor: '#172027',
+    backgroundColor: resolveLegacyColor('#172027', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 20,
   },
   editorCard: {
     width: '100%',
     maxHeight: '88%',
     borderRadius: 8,
-    backgroundColor: '#172027',
+    backgroundColor: resolveLegacyColor('#172027', theme),
   },
   editorContent: {
     padding: 18,
     gap: 12,
   },
   editorLabel: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -3386,8 +4370,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#34444F',
-    color: '#F7FAFC',
+    borderColor: resolveLegacyColor('#34444F', theme),
+    color: resolveLegacyColor('#F7FAFC', theme),
     paddingHorizontal: 14,
     fontSize: 15,
     fontWeight: '700',
@@ -3401,7 +4385,7 @@ const styles = StyleSheet.create({
     maxHeight: 220,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
   },
   exercisePickRow: {
     minHeight: 50,
@@ -3410,47 +4394,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#26343E',
+    borderBottomColor: resolveLegacyColor('#26343E', theme),
   },
   exercisePickName: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontWeight: '800',
     flex: 1,
   },
   emptyText: {
-    color: '#9BA8B4',
+    color: resolveLegacyColor('#9BA8B4', theme),
     padding: 14,
     fontWeight: '700',
   },
   routineEditorBlock: {
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 12,
     gap: 10,
   },
-  routineEditorBlockActive: {
-    borderColor: '#7DD3C7',
-    backgroundColor: '#16242A',
+  routineEditorBlockDragging: {
+    borderColor: resolveLegacyColor('#7DD3C7', theme),
+    backgroundColor: resolveLegacyColor('#16242A', theme),
   },
-  routineEditorHeader: {
+  routineEditorControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 8,
+  },
+  routineEditorTitleRow: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  dragHandle: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: '#222D35',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragHandleText: {
-    color: '#7DD3C7',
-    fontSize: 22,
-    fontWeight: '900',
+  controlButtonDisabled: {
+    opacity: 0.35,
   },
   routineSetEditorRow: {
     minHeight: 48,
@@ -3466,21 +4447,21 @@ const styles = StyleSheet.create({
   },
   routineSetIndexHeader: {
     width: 42,
-    color: '#87939D',
+    color: resolveLegacyColor('#87939D', theme),
     fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   routineSetColumnHeader: {
     flex: 1,
-    color: '#87939D',
+    color: resolveLegacyColor('#87939D', theme),
     fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   routineSetActionHeader: {
     width: 38,
-    color: '#87939D',
+    color: resolveLegacyColor('#87939D', theme),
     fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -3492,7 +4473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   routineSetIndex: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 16,
     fontWeight: '900',
   },
@@ -3501,17 +4482,17 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#34444F',
-    color: '#F7FAFC',
+    borderColor: resolveLegacyColor('#34444F', theme),
+    color: resolveLegacyColor('#F7FAFC', theme),
     paddingHorizontal: 12,
     fontWeight: '800',
   },
   summaryRow: {
     minHeight: 58,
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -3519,7 +4500,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   summaryValue: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 16,
     fontWeight: '900',
   },
@@ -3527,22 +4508,22 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#222D35',
+    backgroundColor: resolveLegacyColor('#222D35', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   smallSquareButtonText: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontSize: 18,
     fontWeight: '900',
   },
   modalTitle: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 22,
     fontWeight: '900',
   },
   modalCopy: {
-    color: '#AAB6C1',
+    color: resolveLegacyColor('#AAB6C1', theme),
     fontSize: 15,
     lineHeight: 22,
     marginTop: 10,
@@ -3556,42 +4537,42 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#D9E2DF',
+    backgroundColor: resolveLegacyColor('#D9E2DF', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalSecondaryText: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
     fontWeight: '900',
   },
   modalPrimary: {
     flex: 1,
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#F0B35B',
+    backgroundColor: resolveLegacyColor('#F0B35B', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalPrimaryText: {
-    color: '#16110A',
+    color: resolveLegacyColor('#16110A', theme),
     fontWeight: '900',
   },
   modalDanger: {
     flex: 1,
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#D84A4A',
+    backgroundColor: resolveLegacyColor('#D84A4A', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalDangerText: {
-    color: '#FFFFFF',
+    color: resolveLegacyColor('#FFFFFF', theme),
     fontWeight: '900',
   },
   fullWidthDanger: {
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#D84A4A',
+    backgroundColor: resolveLegacyColor('#D84A4A', theme),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
@@ -3603,26 +4584,26 @@ const styles = StyleSheet.create({
   kindOption: {
     minHeight: 46,
     borderRadius: 8,
-    backgroundColor: '#D9E2DF',
+    backgroundColor: resolveLegacyColor('#D9E2DF', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   kindOptionActive: {
-    backgroundColor: '#111A1F',
+    backgroundColor: resolveLegacyColor('#111A1F', theme),
   },
   kindOptionText: {
-    color: '#52606A',
+    color: resolveLegacyColor('#52606A', theme),
     fontWeight: '900',
   },
   kindOptionTextActive: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
   },
   exerciseList: {
     marginTop: 12,
     gap: 8,
   },
   routineLine: {
-    color: '#D6DEE5',
+    color: resolveLegacyColor('#D6DEE5', theme),
     fontSize: 14,
   },
   inputRow: {
@@ -3634,8 +4615,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#34444F',
-    color: '#F7FAFC',
+    borderColor: resolveLegacyColor('#34444F', theme),
+    color: resolveLegacyColor('#F7FAFC', theme),
     paddingHorizontal: 14,
     fontSize: 15,
   },
@@ -3645,24 +4626,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#26343E',
+    borderBottomColor: resolveLegacyColor('#26343E', theme),
     gap: 14,
   },
   exerciseRowName: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 16,
     fontWeight: '800',
   },
   badge: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontSize: 12,
     fontWeight: '900',
   },
   heroPanel: {
     borderRadius: 8,
-    backgroundColor: '#172027',
+    backgroundColor: resolveLegacyColor('#172027', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 18,
     gap: 14,
   },
@@ -3676,19 +4657,38 @@ const styles = StyleSheet.create({
     minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#7DD3C7',
+    borderColor: resolveLegacyColor('#7DD3C7', theme),
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconButtonText: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 12,
     fontWeight: '900',
   },
   bodyProfileRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
+  },
+  collapsibleHeader: {
+    minHeight: 48,
+  },
+  collapsibleContent: {
+    flex: 1,
+  },
+  collapsibleTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  collapsibleTitle: {
+    color: resolveLegacyColor('#7DD3C7', theme),
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   weightSummaryRow: {
     minHeight: 86,
@@ -3698,7 +4698,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   bigMetric: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 42,
     fontWeight: '900',
   },
@@ -3724,14 +4724,14 @@ const styles = StyleSheet.create({
     width: '48%',
     minHeight: 108,
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 12,
     justifyContent: 'space-between',
   },
   bodyMetricValue: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 28,
     fontWeight: '900',
   },
@@ -3740,19 +4740,19 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   statusHealthy: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#33BFA6', theme),
   },
   statusHigh: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
   },
   statusVeryHigh: {
-    color: '#E15D5D',
+    color: resolveLegacyColor('#E15D5D', theme),
   },
   statusLow: {
-    color: '#8BB8FF',
+    color: resolveLegacyColor('#8BB8FF', theme),
   },
   statusUnknown: {
-    color: '#9BA8B4',
+    color: resolveLegacyColor('#9BA8B4', theme),
   },
   bmiRow: {
     flexDirection: 'row',
@@ -3763,7 +4763,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 8,
     marginTop: 18,
-    backgroundColor: '#F0B35B',
+    backgroundColor: resolveLegacyColor('#F0B35B', theme),
   },
   bmiMarker: {
     position: 'absolute',
@@ -3772,9 +4772,9 @@ const styles = StyleSheet.create({
     height: 22,
     marginLeft: -11,
     borderRadius: 11,
-    backgroundColor: '#7DD3C7',
+    backgroundColor: resolveLegacyColor('#7DD3C7', theme),
     borderWidth: 3,
-    borderColor: '#172027',
+    borderColor: resolveLegacyColor('#172027', theme),
   },
   bmiLabels: {
     marginTop: 10,
@@ -3783,7 +4783,7 @@ const styles = StyleSheet.create({
   },
   bmiHint: {
     marginTop: 12,
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '800',
@@ -3791,9 +4791,9 @@ const styles = StyleSheet.create({
   segmentedControl: {
     minHeight: 46,
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 4,
     flexDirection: 'row',
     gap: 4,
@@ -3805,24 +4805,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileSegmentButtonActive: {
-    backgroundColor: '#7DD3C7',
+    backgroundColor: resolveLegacyColor('#7DD3C7', theme),
   },
   profileSegmentButtonText: {
-    color: '#9BA8B4',
+    color: resolveLegacyColor('#9BA8B4', theme),
     fontWeight: '900',
   },
   profileSegmentButtonTextActive: {
-    color: '#071313',
+    color: resolveLegacyColor('#071313', theme),
   },
   smallActionButton: {
     minHeight: 36,
     borderRadius: 8,
-    backgroundColor: '#222D35',
+    backgroundColor: resolveLegacyColor('#222D35', theme),
     paddingHorizontal: 12,
     justifyContent: 'center',
   },
   smallActionText: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontWeight: '900',
   },
   photoStrip: {
@@ -3834,9 +4834,9 @@ const styles = StyleSheet.create({
   },
   photoFolder: {
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     overflow: 'hidden',
   },
   photoFolderHeader: {
@@ -3850,40 +4850,29 @@ const styles = StyleSheet.create({
     width: 46,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#223038',
+    backgroundColor: resolveLegacyColor('#223038', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   folderIconText: {
-    color: '#F0B35B',
+    color: resolveLegacyColor('#F0B35B', theme),
     fontSize: 22,
     fontWeight: '900',
-  },
-  folderChevron: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    backgroundColor: '#222D35',
-    color: '#7DD3C7',
-    fontSize: 24,
-    fontWeight: '900',
-    lineHeight: 32,
-    textAlign: 'center',
   },
   photoGroup: {
     gap: 6,
   },
   photoGroupTitle: {
-    color: '#D6DEE5',
+    color: resolveLegacyColor('#D6DEE5', theme),
     fontSize: 13,
     fontWeight: '900',
   },
   photoCard: {
     width: 128,
     borderRadius: 8,
-    backgroundColor: '#101820',
+    backgroundColor: resolveLegacyColor('#101820', theme),
     borderWidth: 1,
-    borderColor: '#27343D',
+    borderColor: resolveLegacyColor('#27343D', theme),
     padding: 8,
     gap: 6,
   },
@@ -3906,16 +4895,16 @@ const styles = StyleSheet.create({
   viewerButton: {
     minHeight: 40,
     borderRadius: 8,
-    backgroundColor: '#EAF2EE',
+    backgroundColor: resolveLegacyColor('#EAF2EE', theme),
     paddingHorizontal: 14,
     justifyContent: 'center',
   },
   viewerButtonText: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
     fontWeight: '900',
   },
   viewerDate: {
-    color: '#D6DEE5',
+    color: resolveLegacyColor('#D6DEE5', theme),
     fontWeight: '900',
     flex: 1,
     textAlign: 'right',
@@ -3932,7 +4921,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(17,26,31,0.92)',
     borderWidth: 1,
-    borderColor: '#2B3A43',
+    borderColor: resolveLegacyColor('#2B3A43', theme),
     padding: 8,
     flexDirection: 'row',
     gap: 10,
@@ -3941,12 +4930,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#EAF2EE',
+    backgroundColor: resolveLegacyColor('#EAF2EE', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   viewerSaveButtonText: {
-    color: '#111A1F',
+    color: resolveLegacyColor('#111A1F', theme),
     fontWeight: '900',
     fontSize: 14,
   },
@@ -3954,12 +4943,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 8,
-    backgroundColor: '#D84A4A',
+    backgroundColor: resolveLegacyColor('#D84A4A', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   viewerDeleteButtonText: {
-    color: '#FFFFFF',
+    color: resolveLegacyColor('#FFFFFF', theme),
     fontWeight: '900',
     fontSize: 14,
   },
@@ -3967,22 +4956,22 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 144,
     borderRadius: 6,
-    backgroundColor: '#222D35',
+    backgroundColor: resolveLegacyColor('#222D35', theme),
   },
   photoDate: {
-    color: '#D6DEE5',
+    color: resolveLegacyColor('#D6DEE5', theme),
     fontSize: 11,
     fontWeight: '700',
   },
   photoDelete: {
     minHeight: 30,
     borderRadius: 6,
-    backgroundColor: '#D84A4A',
+    backgroundColor: resolveLegacyColor('#D84A4A', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   photoDeleteText: {
-    color: '#FFFFFF',
+    color: resolveLegacyColor('#FFFFFF', theme),
     fontSize: 11,
     fontWeight: '900',
   },
@@ -3992,7 +4981,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#26343E',
+    borderBottomColor: resolveLegacyColor('#26343E', theme),
     gap: 12,
   },
   progressRow: {
@@ -4001,15 +4990,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#26343E',
+    borderBottomColor: resolveLegacyColor('#26343E', theme),
   },
   progressName: {
-    color: '#F7FAFC',
+    color: resolveLegacyColor('#F7FAFC', theme),
     fontSize: 15,
     fontWeight: '800',
   },
   progressValue: {
-    color: '#7DD3C7',
+    color: resolveLegacyColor('#7DD3C7', theme),
     fontSize: 15,
     fontWeight: '900',
   },
@@ -4023,8 +5012,8 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 8,
-    backgroundColor: '#F0B35B',
-    color: '#16110A',
+    backgroundColor: resolveLegacyColor('#F0B35B', theme),
+    color: resolveLegacyColor('#16110A', theme),
     fontWeight: '900',
     textAlign: 'center',
     lineHeight: 42,
@@ -4038,7 +5027,7 @@ const styles = StyleSheet.create({
     right: 14,
     minHeight: 64,
     borderRadius: 8,
-    backgroundColor: '#EAF2EE',
+    backgroundColor: resolveLegacyColor('#EAF2EE', theme),
     flexDirection: 'row',
     alignItems: 'center',
     padding: 6,
@@ -4052,14 +5041,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeTab: {
-    backgroundColor: '#111A1F',
+    backgroundColor: theme.onNavigation,
   },
   tabText: {
-    color: '#52606A',
+    color: resolveLegacyColor('#52606A', theme),
     fontSize: 12,
     fontWeight: '900',
   },
   activeTabText: {
-    color: '#F7FAFC',
+    color: '#FFFFFF',
   },
-});
+  });
+}
+
+const darkStyles = createStyles(darkTheme);
+const lightStyles = createStyles(lightTheme);
+let styles = darkStyles;
