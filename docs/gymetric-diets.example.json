@@ -1,0 +1,41 @@
+{
+  "format": "gymetric-diets",
+  "schemaVersion": 1,
+  "exportedAt": "2026-09-01T12:00:00.000Z",
+  "diets": [
+    {
+      "id": "diet-example",
+      "name": "Plan nutricional de ejemplo",
+      "objective": "Etapa de mantenimiento",
+      "startDate": "2026-09-01",
+      "notes": "Beber agua durante todo el día.",
+      "isCurrent": false,
+      "createdAt": "2026-09-01T12:00:00.000Z",
+      "days": [
+        {
+          "id": "day-training",
+          "name": "Día de entrenamiento",
+          "meals": [
+            {
+              "id": "meal-breakfast",
+              "name": "Desayuno",
+              "items": [
+                { "id": "item-oats", "name": "Copos de avena", "quantity": "80 g" },
+                { "id": "item-yogurt", "name": "Yogur natural", "quantity": "250 g" }
+              ]
+            },
+            {
+              "id": "meal-lunch",
+              "name": "Comida",
+              "notes": "Verduras libres como acompañamiento.",
+              "items": [
+                { "id": "item-rice", "name": "Arroz", "quantity": "100 g en crudo" },
+                { "id": "item-chicken", "name": "Pechuga de pollo", "quantity": "180 g" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

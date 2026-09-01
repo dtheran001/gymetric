@@ -1,4 +1,4 @@
-import { RoutineExercise, SetKind, Weekday } from '../domain/types';
+import { Routine, RoutineExercise, SetKind, Weekday } from '../domain/types';
 
 export const weekdayOptions: Weekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -14,6 +14,20 @@ export function estimateRoutineMinutes(exercises: RoutineExercise[]) {
   );
   const activeSeconds = exercises.reduce((total, exercise) => total + exercise.sets.length * 45, 0);
   return Math.max(Math.round((totalRestSeconds + activeSeconds) / 60), 1);
+}
+
+export function getRoutineSetPositions(routine: Routine) {
+  const allPositions = routine.exercises.flatMap((exercise, exerciseIndex) =>
+    exercise.sets.map((set, setIndex) => ({ exerciseIndex, setIndex, routineExerciseId: exercise.id, setId: set.id })),
+  );
+  if (!routine.executionSequence?.length) return allPositions;
+
+  const byKey = new Map(allPositions.map((position) => [`${position.routineExerciseId}:${position.setId}`, position]));
+  const ordered = routine.executionSequence
+    .map((step) => byKey.get(`${step.routineExerciseId}:${step.setId}`))
+    .filter((position): position is (typeof allPositions)[number] => Boolean(position));
+  const orderedKeys = new Set(ordered.map((position) => `${position.routineExerciseId}:${position.setId}`));
+  return [...ordered, ...allPositions.filter((position) => !orderedKeys.has(`${position.routineExerciseId}:${position.setId}`))];
 }
 
 export function splitRestTime(totalSeconds: number) {

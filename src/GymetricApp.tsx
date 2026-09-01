@@ -47,6 +47,12 @@ import DraggableFlatList, {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
+import { buildDietTransferFile, parseDietTransferFile } from './data/dietTransfer';
+import {
+  buildRoutineTransferFile,
+  mergeRoutineTransferFile,
+  parseRoutineTransferFile,
+} from './data/routineTransfer';
 import {
   loadAppPreferences,
   loadPersistedData,
@@ -75,6 +81,7 @@ import {
   Achievement,
   BodyMeasurement,
   BodyProfile,
+  Diet,
   EquipmentKind,
   Exercise,
   GripKind,
@@ -82,6 +89,7 @@ import {
   MuscleGroup,
   ProgressPhoto,
   Routine,
+  RoutineCollection,
   RoutineExercise,
   RoutineSet,
   SetKind,
@@ -101,6 +109,7 @@ import {
 import {
   estimateRoutineMinutes,
   getNextSetKind,
+  getRoutineSetPositions,
   getSetKindLabel,
   getTodayWeekday,
   weekdayOptions,
@@ -147,6 +156,7 @@ type RoutineDraft = {
   name: string;
   focus: string;
   preferredDays: Weekday[];
+  collection: string;
   exercises: RoutineExercise[];
 };
 
@@ -276,6 +286,8 @@ function GymetricApp() {
   const [tab, setTab] = useState<Tab>('today');
   const [exercises, setExercises] = useState(seedExercises);
   const [routines, setRoutines] = useState(seedRoutines);
+  const [routineCollections, setRoutineCollections] = useState<RoutineCollection[]>([]);
+  const [diets, setDiets] = useState<Diet[]>([]);
   const [logs, setLogs] = useState(seedLogs);
   const [achievements, setAchievements] = useState(seedAchievements);
   const [bodyProfile, setBodyProfile] = useState<BodyProfile | null>(null);
@@ -284,6 +296,7 @@ function GymetricApp() {
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkout | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [setEditorTarget, setSetEditorTarget] = useState<SetEditorTarget>(null);
+  const [noteEditorTarget, setNoteEditorTarget] = useState<{ exerciseIndex: number; notes: string } | null>(null);
   const [exerciseDraft, setExerciseDraft] = useState<ExerciseDraft | null>(null);
   const [routineDraft, setRoutineDraft] = useState<RoutineDraft | null>(null);
   const [bodyProfileDraft, setBodyProfileDraft] = useState<BodyProfileDraft | null>(null);
@@ -297,8 +310,10 @@ function GymetricApp() {
   const [storageError, setStorageError] = useState<string | null>(null);
 
   const todayWeekday = getTodayWeekday();
-  const suggestedRoutines = routines.filter((routine) => routine.preferredDays?.includes(todayWeekday));
-  const nextRoutine = suggestedRoutines[0] ?? routines[0];
+  const archivedCollectionNames = new Set(routineCollections.filter((collection) => collection.archivedAt).map((collection) => collection.name));
+  const activeRoutines = routines.filter((routine) => !routine.archivedAt && !archivedCollectionNames.has(routine.collection ?? ''));
+  const suggestedRoutines = activeRoutines.filter((routine) => routine.preferredDays?.includes(todayWeekday));
+  const nextRoutine = suggestedRoutines[0] ?? activeRoutines[0];
   const totalSetsLogged = logs.length;
   const latestAchievement = achievements[0];
   const notificationRoutineExercise = activeWorkout?.routine.exercises[activeWorkout.exerciseIndex];
@@ -336,6 +351,8 @@ function GymetricApp() {
     return {
       exercises,
       routines,
+      routineCollections,
+      diets,
       logs,
       achievements,
       bodyProfile,
@@ -411,6 +428,15 @@ function GymetricApp() {
         }
         setExercises(data.exercises);
         setRoutines(data.routines);
+        const knownCollectionNames = new Set(data.routineCollections.map((collection) => collection.name.toLocaleLowerCase('es')));
+        const migratedCollections = data.routines
+          .map((routine) => routine.collection?.trim())
+          .filter((name): name is string => typeof name === 'string' && name.length > 0)
+          .filter((name) => !knownCollectionNames.has(name.toLocaleLowerCase('es')))
+          .filter((name, index, names) => names.findIndex((item) => item.toLocaleLowerCase('es') === name.toLocaleLowerCase('es')) === index)
+          .map((name, index) => ({ id: `collection-migrated-${Date.now()}-${index}`, name, createdAt: new Date().toISOString() }));
+        setRoutineCollections([...data.routineCollections, ...migratedCollections]);
+        setDiets(data.diets);
         setLogs(data.logs);
         setAchievements(data.achievements);
         setBodyProfile(data.bodyProfile);
@@ -442,7 +468,7 @@ function GymetricApp() {
       .catch((error: unknown) => {
         setStorageError(error instanceof Error ? error.message : 'No se pudo guardar SQLite.');
       });
-  }, [achievements, bodyMeasurements, bodyProfile, exercises, isStorageReady, logs, progressPhotos, routines]);
+  }, [achievements, bodyMeasurements, bodyProfile, diets, exercises, isStorageReady, logs, progressPhotos, routineCollections, routines]);
 
   useEffect(() => {
     if (!activeWorkout?.isResting || !activeWorkout.restEndsAt) {
@@ -498,6 +524,10 @@ function GymetricApp() {
         setSetEditorTarget(null);
         return true;
       }
+      if (noteEditorTarget) {
+        setNoteEditorTarget(null);
+        return true;
+      }
       if (showFinishConfirm) {
         setShowFinishConfirm(false);
         return true;
@@ -543,6 +573,7 @@ function GymetricApp() {
     bodyProfileDraft,
     exerciseDraft,
     lastBackPressAt,
+    noteEditorTarget,
     routineDraft,
     selectedProgressPhoto,
     setEditorTarget,
@@ -561,8 +592,8 @@ function GymetricApp() {
     return routine.exercises.reduce<ActualSetInput>((inputMap, routineExercise, exerciseIndex) => {
       routineExercise.sets.forEach((set, setIndex) => {
         inputMap[getSetKey(routine, exerciseIndex, setIndex)] = {
-          reps: set.targetReps.toString(),
-          weightKg: formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit)),
+          reps: set.targetReps?.toString() ?? '',
+          weightKg: set.targetWeightKg === null ? '' : formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit)),
         };
       });
       return inputMap;
@@ -598,8 +629,8 @@ function GymetricApp() {
     const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
     const setKey = `${routineExercise.id}:${routineSet.id}`;
     const input = workout.inputs[setKey];
-    const weight = input?.weightKg || formatDecimal(displayWeight(routineSet.targetWeightKg, preferences.weightUnit));
-    const reps = input?.reps || routineSet.targetReps.toString();
+    const weight = input?.weightKg || (routineSet.targetWeightKg === null ? '—' : formatDecimal(displayWeight(routineSet.targetWeightKg, preferences.weightUnit)));
+    const reps = input?.reps || routineSet.targetReps?.toString() || 'fallo';
     const seriesText = `Serie ${workout.setIndex + 1}/${routineExercise.sets.length} · ${weight} ${
       preferences.weightUnit
     } × ${reps} reps`;
@@ -691,10 +722,11 @@ function GymetricApp() {
     }
 
     const startedAt = Date.now();
+    const firstPosition = getRoutineSetPositions(routine)[0] ?? { exerciseIndex: 0, setIndex: 0 };
     setActiveWorkout({
       routine,
-      exerciseIndex: 0,
-      setIndex: 0,
+      exerciseIndex: firstPosition.exerciseIndex,
+      setIndex: firstPosition.setIndex,
       restRemaining: 0,
       restEndsAt: null,
       restNotificationId: null,
@@ -732,28 +764,15 @@ function GymetricApp() {
   }
 
   function getNextOpenSet(workout: ActiveWorkout, completedSetIds: string[], fromExerciseIndex: number, fromSetIndex: number) {
-    for (let exerciseIndex = fromExerciseIndex; exerciseIndex < workout.routine.exercises.length; exerciseIndex += 1) {
-      const routineExercise = workout.routine.exercises[exerciseIndex];
-      const firstSet = exerciseIndex === fromExerciseIndex ? fromSetIndex + 1 : 0;
-      for (let setIndex = firstSet; setIndex < routineExercise.sets.length; setIndex += 1) {
-        if (
-          !workout.skippedExerciseIds.includes(routineExercise.id) &&
-          !completedSetIds.includes(getSetKey(workout.routine, exerciseIndex, setIndex))
-        ) {
-          return { exerciseIndex, setIndex };
-        }
-      }
-    }
-
-    for (let exerciseIndex = 0; exerciseIndex < workout.routine.exercises.length; exerciseIndex += 1) {
-      const routineExercise = workout.routine.exercises[exerciseIndex];
-      for (let setIndex = 0; setIndex < routineExercise.sets.length; setIndex += 1) {
-        if (
-          !workout.skippedExerciseIds.includes(routineExercise.id) &&
-          !completedSetIds.includes(getSetKey(workout.routine, exerciseIndex, setIndex))
-        ) {
-          return { exerciseIndex, setIndex };
-        }
+    const positions = getRoutineSetPositions(workout.routine);
+    const currentPositionIndex = positions.findIndex(
+      (position) => position.exerciseIndex === fromExerciseIndex && position.setIndex === fromSetIndex,
+    );
+    const candidates = [...positions.slice(currentPositionIndex + 1), ...positions.slice(0, currentPositionIndex + 1)];
+    for (const position of candidates) {
+      const routineExercise = workout.routine.exercises[position.exerciseIndex];
+      if (!workout.skippedExerciseIds.includes(routineExercise.id) && !completedSetIds.includes(getSetKey(workout.routine, position.exerciseIndex, position.setIndex))) {
+        return { exerciseIndex: position.exerciseIndex, setIndex: position.setIndex };
       }
     }
 
@@ -784,10 +803,10 @@ function GymetricApp() {
     const actualInput = activeWorkout.inputs[setKey];
     const actualReps = Number.parseInt(actualInput?.reps ?? '', 10);
     const actualWeight = Number.parseFloat((actualInput?.weightKg ?? '').replace(',', '.'));
-    const reps = Number.isFinite(actualReps) ? actualReps : routineSet.targetReps;
+    const reps = Number.isFinite(actualReps) ? actualReps : routineSet.targetReps ?? 0;
     const weightKg = Number.isFinite(actualWeight)
       ? weightToKg(actualWeight, preferences.weightUnit)
-      : routineSet.targetWeightKg;
+      : routineSet.targetWeightKg ?? 0;
     const completedAt = new Date().toISOString();
     const previousBest = getPersonalBest(logs, selectedExercise.id);
     const logId = `log-${completedAt}`;
@@ -826,7 +845,9 @@ function GymetricApp() {
       return;
     }
 
-    const notificationId = await scheduleRestNotification(selectedRoutineExercise.restSeconds);
+    const nextRoutineSet = activeWorkout.routine.exercises[nextPosition.exerciseIndex].sets[nextPosition.setIndex];
+    const restSeconds = nextRoutineSet.kind === 'drop' ? 0 : selectedRoutineExercise.restSeconds;
+    const notificationId = restSeconds > 0 ? await scheduleRestNotification(restSeconds) : null;
 
     setActiveWorkout({
       ...activeWorkout,
@@ -836,10 +857,10 @@ function GymetricApp() {
       completedAchievementIds,
       pendingLogs,
       pendingAchievements,
-      restRemaining: selectedRoutineExercise.restSeconds,
-      restEndsAt: Date.now() + selectedRoutineExercise.restSeconds * 1000,
+      restRemaining: restSeconds,
+      restEndsAt: restSeconds > 0 ? Date.now() + restSeconds * 1000 : null,
       restNotificationId: notificationId,
-      isResting: true,
+      isResting: restSeconds > 0,
     });
   }
 
@@ -959,8 +980,8 @@ function GymetricApp() {
         inputs: {
           ...current.inputs,
           [setKey]: {
-            reps: previousSet.targetReps.toString(),
-            weightKg: formatDecimal(displayWeight(previousSet.targetWeightKg, preferences.weightUnit)),
+            reps: previousSet.targetReps?.toString() ?? '',
+            weightKg: previousSet.targetWeightKg === null ? '' : formatDecimal(displayWeight(previousSet.targetWeightKg, preferences.weightUnit)),
           },
         },
       };
@@ -1048,6 +1069,27 @@ function GymetricApp() {
 
   function setWorkoutView(view: WorkoutView) {
     setActiveWorkout((current) => (current ? { ...current, view } : current));
+  }
+
+  function saveActiveRoutineExerciseNote() {
+    if (!activeWorkout || !noteEditorTarget) {
+      return;
+    }
+
+    const notes = noteEditorTarget.notes.trim();
+    const exerciseIndex = noteEditorTarget.exerciseIndex;
+    const updatedRoutine: Routine = {
+      ...activeWorkout.routine,
+      exercises: activeWorkout.routine.exercises.map((exercise, index) =>
+        index === exerciseIndex ? { ...exercise, notes: notes || undefined } : exercise,
+      ),
+    };
+    const nextRoutines = routines.map((routine) => (routine.id === updatedRoutine.id ? updatedRoutine : routine));
+
+    setActiveWorkout((current) => (current ? { ...current, routine: updatedRoutine } : current));
+    setRoutines(nextRoutines);
+    persistData({ routines: nextRoutines });
+    setNoteEditorTarget(null);
   }
 
   function skipExerciseInActiveRoutine(exerciseIndex: number) {
@@ -1148,6 +1190,7 @@ function GymetricApp() {
       name: routine?.name ?? '',
       focus: routine?.focus ?? '',
       preferredDays: routine?.preferredDays ?? [],
+      collection: routine?.collection ?? '',
       exercises: routine?.exercises.map((routineExercise) => ({
         ...routineExercise,
         sets: routineExercise.sets.map((set) => ({ ...set })),
@@ -1160,12 +1203,18 @@ function GymetricApp() {
       return;
     }
 
+    const existingRoutine = routines.find((item) => item.id === routineDraft.id);
     const routine: Routine = {
       id: routineDraft.id ?? `routine-${Date.now()}`,
       name: routineDraft.name.trim(),
       focus: routineDraft.focus.trim() || 'Rutina personalizada',
       estimatedMinutes: estimateRoutineMinutes(routineDraft.exercises),
       preferredDays: routineDraft.preferredDays,
+      collection: routineDraft.collection.trim() || undefined,
+      archivedAt: existingRoutine?.archivedAt,
+      notes: existingRoutine?.notes,
+      conditioning: existingRoutine?.conditioning,
+      executionSequence: existingRoutine?.executionSequence,
       exercises: routineDraft.exercises,
     };
 
@@ -1186,6 +1235,66 @@ function GymetricApp() {
     setLogs(nextLogs);
     persistData({ routines: nextRoutines, logs: nextLogs });
     setRoutineDraft(null);
+  }
+
+  function toggleRoutineArchived(routineId: string) {
+    const nextRoutines = routines.map((routine) =>
+      routine.id === routineId
+        ? { ...routine, archivedAt: routine.archivedAt ? undefined : new Date().toISOString() }
+        : routine,
+    );
+    setRoutines(nextRoutines);
+    persistData({ routines: nextRoutines });
+  }
+
+  function createRoutineCollection(name: string) {
+    const trimmedName = name.trim();
+    if (!trimmedName || routineCollections.some((collection) => collection.name.toLocaleLowerCase('es') === trimmedName.toLocaleLowerCase('es'))) return false;
+    const nextCollections = [{ id: `collection-${Date.now()}`, name: trimmedName, createdAt: new Date().toISOString() }, ...routineCollections];
+    setRoutineCollections(nextCollections);
+    persistData({ routineCollections: nextCollections });
+    return true;
+  }
+
+  function toggleRoutineCollectionArchived(collectionId: string) {
+    const collection = routineCollections.find((item) => item.id === collectionId);
+    if (!collection) return;
+    const archivedAt = collection.archivedAt ? undefined : new Date().toISOString();
+    const nextCollections = routineCollections.map((item) => item.id === collectionId ? { ...item, archivedAt } : item);
+    const nextRoutines = routines.map((routine) => routine.collection === collection.name ? { ...routine, archivedAt } : routine);
+    setRoutineCollections(nextCollections);
+    setRoutines(nextRoutines);
+    persistData({ routineCollections: nextCollections, routines: nextRoutines });
+  }
+
+  function assignRoutineToCollection(routineId: string, collectionName?: string) {
+    const nextRoutines = routines.map((routine) =>
+      routine.id === routineId ? { ...routine, collection: collectionName || undefined } : routine,
+    );
+    setRoutines(nextRoutines);
+    persistData({ routines: nextRoutines });
+  }
+
+  function deleteRoutineCollection(collectionId: string) {
+    const collection = routineCollections.find((item) => item.id === collectionId);
+    if (!collection) return;
+    const nextCollections = routineCollections.filter((item) => item.id !== collectionId);
+    const nextRoutines = routines.map((routine) =>
+      routine.collection === collection.name ? { ...routine, collection: undefined } : routine,
+    );
+    setRoutineCollections(nextCollections);
+    setRoutines(nextRoutines);
+    persistData({ routineCollections: nextCollections, routines: nextRoutines });
+  }
+
+  function toggleExerciseArchived(exerciseId: string) {
+    const nextExercises = exercises.map((exercise) =>
+      exercise.id === exerciseId
+        ? { ...exercise, archivedAt: exercise.archivedAt ? undefined : new Date().toISOString() }
+        : exercise,
+    );
+    setExercises(nextExercises);
+    persistData({ exercises: nextExercises });
   }
 
   function saveWorkoutSummary() {
@@ -1409,7 +1518,7 @@ function GymetricApp() {
   async function exportData() {
     try {
       const backup = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         exportedAt: new Date().toISOString(),
         app: 'Gymetric',
         preferences,
@@ -1434,6 +1543,106 @@ function GymetricApp() {
     }
   }
 
+  async function exportRoutines() {
+    try {
+      if (!routines.length) {
+        Alert.alert('Sin rutinas', 'No hay rutinas para exportar.');
+        return;
+      }
+      const transfer = buildRoutineTransferFile(exercises, routines);
+      const fileUri = `${FileSystem.cacheDirectory}gymetric-routines-${new Date().toISOString().slice(0, 10)}.json`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(transfer, null, 2));
+      if (!(await Sharing.isAvailableAsync())) {
+        throw new Error('Compartir archivos no está disponible en este dispositivo.');
+      }
+      await Sharing.shareAsync(fileUri, {
+        dialogTitle: 'Exportar rutinas de Gymetric',
+        mimeType: 'application/json',
+      });
+    } catch (error: unknown) {
+      Alert.alert('No se pudieron exportar las rutinas', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  async function importRoutines() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
+      if (result.canceled) {
+        return;
+      }
+      const raw = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const transfer = parseRoutineTransferFile(raw);
+      const merged = mergeRoutineTransferFile(exercises, routines, transfer);
+
+      Alert.alert(
+        'Importar rutinas',
+        `${merged.addedRoutineCount} rutinas · ${merged.addedExerciseCount} ejercicios nuevos · ${merged.reusedExerciseCount} reutilizados. No se reemplazará ningún dato.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Importar',
+            onPress: () => {
+              const existingNames = new Set(routineCollections.map((collection) => collection.name.toLocaleLowerCase('es')));
+              const importedCollections = merged.routines
+                .map((routine) => routine.collection?.trim())
+                .filter((name): name is string => typeof name === 'string' && name.length > 0)
+                .filter((name) => !existingNames.has(name.toLocaleLowerCase('es')))
+                .filter((name, index, names) => names.findIndex((item) => item.toLocaleLowerCase('es') === name.toLocaleLowerCase('es')) === index)
+                .map((name, index) => ({ id: `collection-import-${Date.now()}-${index}`, name, createdAt: new Date().toISOString() }));
+              const nextCollections = [...routineCollections, ...importedCollections];
+              setExercises(merged.exercises);
+              setRoutines(merged.routines);
+              setRoutineCollections(nextCollections);
+              persistData({ exercises: merged.exercises, routines: merged.routines, routineCollections: nextCollections });
+              Alert.alert('Rutinas importadas', 'Las nuevas rutinas se han añadido a tu biblioteca.');
+            },
+          },
+        ],
+      );
+    } catch (error: unknown) {
+      Alert.alert('No se pudieron importar las rutinas', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  async function exportDiets() {
+    try {
+      if (!diets.length) {
+        Alert.alert('Sin dietas', 'No hay dietas para exportar.');
+        return;
+      }
+      const fileUri = `${FileSystem.cacheDirectory}gymetric-diets-${new Date().toISOString().slice(0, 10)}.json`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(buildDietTransferFile(diets), null, 2));
+      if (!(await Sharing.isAvailableAsync())) throw new Error('Compartir archivos no está disponible.');
+      await Sharing.shareAsync(fileUri, { dialogTitle: 'Exportar dietas de Gymetric', mimeType: 'application/json' });
+    } catch (error: unknown) {
+      Alert.alert('No se pudieron exportar las dietas', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  async function importDiets() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
+      if (result.canceled) return;
+      const imported = parseDietTransferFile(await FileSystem.readAsStringAsync(result.assets[0].uri));
+      Alert.alert('Importar dietas', `Se añadirán ${imported.length} dietas al histórico.`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Importar', onPress: () => {
+          const nextDiets = [...imported, ...diets];
+          setDiets(nextDiets);
+          persistData({ diets: nextDiets });
+        } },
+      ]);
+    } catch (error: unknown) {
+      Alert.alert('No se pudieron importar las dietas', error instanceof Error ? error.message : 'Error desconocido.');
+    }
+  }
+
+  function setCurrentDiet(dietId: string) {
+    const nextDiets = diets.map((diet) => ({ ...diet, isCurrent: diet.id === dietId }));
+    setDiets(nextDiets);
+    persistData({ diets: nextDiets });
+  }
+
   async function importData() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -1451,7 +1660,7 @@ function GymetricApp() {
       };
       const data = backup.data;
       if (
-        backup.schemaVersion !== 1 ||
+        (backup.schemaVersion !== 1 && backup.schemaVersion !== 2) ||
         !data ||
         !Array.isArray(data.exercises) ||
         !Array.isArray(data.routines) ||
@@ -1474,6 +1683,8 @@ function GymetricApp() {
               const importedData: PersistedData = {
                 exercises: data.exercises!,
                 routines: data.routines!,
+                diets: Array.isArray(data.diets) ? data.diets : [],
+                routineCollections: Array.isArray(data.routineCollections) ? data.routineCollections : [],
                 logs: data.logs!,
                 achievements: data.achievements!,
                 bodyProfile: data.bodyProfile ?? null,
@@ -1484,6 +1695,8 @@ function GymetricApp() {
                 .then(() => {
                   setExercises(importedData.exercises);
                   setRoutines(importedData.routines);
+                  setDiets(importedData.diets);
+                  setRoutineCollections(importedData.routineCollections);
                   setLogs(importedData.logs);
                   setAchievements(importedData.achievements);
                   setBodyProfile(importedData.bodyProfile);
@@ -1576,6 +1789,7 @@ function GymetricApp() {
             latestAchievement={latestAchievement}
             nextRoutine={nextRoutine}
             openSetEditor={setSetEditorTarget}
+            openNoteEditor={(exerciseIndex, notes) => setNoteEditorTarget({ exerciseIndex, notes })}
             requestFinishRoutine={requestFinishRoutine}
             setWorkoutView={setWorkoutView}
             skipRest={skipRest}
@@ -1590,10 +1804,18 @@ function GymetricApp() {
 
         {tab === 'routines' && (
           <RoutinesScreen
+            assignRoutineToCollection={assignRoutineToCollection}
+            collections={routineCollections}
+            createCollection={createRoutineCollection}
+            deleteCollection={deleteRoutineCollection}
             exercises={exercises}
+            exportRoutines={exportRoutines}
+            importRoutines={importRoutines}
             openRoutineEditor={openRoutineEditor}
             routines={routines}
             startRoutine={startRoutine}
+            toggleRoutineArchived={toggleRoutineArchived}
+            toggleCollectionArchived={toggleRoutineCollectionArchived}
           />
         )}
 
@@ -1601,6 +1823,16 @@ function GymetricApp() {
           <ExercisesScreen
             exercises={exercises}
             openExerciseEditor={openExerciseEditor}
+            toggleExerciseArchived={toggleExerciseArchived}
+          />
+        )}
+
+        {tab === 'diet' && (
+          <DietScreen
+            diets={diets}
+            exportDiets={exportDiets}
+            importDiets={importDiets}
+            setCurrentDiet={setCurrentDiet}
           />
         )}
 
@@ -1625,6 +1857,7 @@ function GymetricApp() {
       <View style={[styles.tabs, { bottom: Math.max(insets.bottom, 10) }]}>
         <TabButton active={tab === 'today'} label="Hoy" onPress={() => setTab('today')} />
         <TabButton active={tab === 'routines'} label="Rutinas" onPress={() => setTab('routines')} />
+        <TabButton active={tab === 'diet'} label="Dieta" onPress={() => setTab('diet')} />
         <TabButton active={tab === 'exercises'} label="Ejercicios" onPress={() => setTab('exercises')} />
         <TabButton active={tab === 'progress'} label="Progreso" onPress={() => setTab('progress')} />
       </View>
@@ -1672,6 +1905,13 @@ function GymetricApp() {
         updateSetKindAt={updateSetKindAt}
       />
 
+      <RoutineNoteModal
+        target={noteEditorTarget}
+        close={() => setNoteEditorTarget(null)}
+        save={saveActiveRoutineExerciseNote}
+        setTarget={setNoteEditorTarget}
+      />
+
       <ExerciseEditorModal
         draft={exerciseDraft}
         setDraft={setExerciseDraft}
@@ -1681,6 +1921,7 @@ function GymetricApp() {
       />
 
       <RoutineEditorModal
+        collections={routineCollections}
         draft={routineDraft}
         deleteRoutine={deleteRoutineFromLibrary}
         exercises={exercises}
@@ -2002,6 +2243,7 @@ function TodayScreen({
   exercises,
   latestAchievement,
   nextRoutine,
+  openNoteEditor,
   openSetEditor,
   requestFinishRoutine,
   setWorkoutView,
@@ -2024,6 +2266,7 @@ function TodayScreen({
   exercises: Exercise[];
   latestAchievement?: Achievement;
   nextRoutine?: Routine;
+  openNoteEditor: (exerciseIndex: number, notes: string) => void;
   openSetEditor: (target: SetEditorTarget) => void;
   requestFinishRoutine: () => void;
   setWorkoutView: (view: WorkoutView) => void;
@@ -2035,7 +2278,7 @@ function TodayScreen({
   updateActualSetValue: (field: 'reps' | 'weightKg', value: string) => void;
   updateSetValueAt: (exerciseIndex: number, setIndex: number, field: 'reps' | 'weightKg', value: string) => void;
 }) {
-  const { preferences } = useAppSettings();
+  const { colors, preferences } = useAppSettings();
   if (activeWorkout && activeExercise) {
     const routineExercise = activeWorkout.routine.exercises[activeWorkout.exerciseIndex];
     const set = routineExercise.sets[activeWorkout.setIndex];
@@ -2052,6 +2295,8 @@ function TodayScreen({
               <Text style={styles.muted}>
                 {activeWorkout.exerciseIndex + 1}/{activeWorkout.routine.exercises.length} ejercicios
               </Text>
+              {!!activeWorkout.routine.conditioning && <Text style={styles.routineNote}>{activeWorkout.routine.conditioning}</Text>}
+              {!!activeWorkout.routine.notes && <Text style={styles.generalExerciseNote}>{activeWorkout.routine.notes}</Text>}
             </View>
             <Pressable style={styles.endButton} onPress={requestFinishRoutine}>
               <Text style={styles.endButtonText}>Terminar</Text>
@@ -2075,6 +2320,7 @@ function TodayScreen({
             completeSetAt={completeSetAt}
             deleteSetAt={deleteSetAt}
             exercises={exercises}
+            openNoteEditor={openNoteEditor}
             openSetEditor={openSetEditor}
             skipExerciseInActiveRoutine={skipExerciseInActiveRoutine}
             uncompleteSetAt={uncompleteSetAt}
@@ -2083,6 +2329,15 @@ function TodayScreen({
         ) : (
           <View style={styles.workoutCard}>
             <Text style={styles.exerciseName}>{activeExercise.name}</Text>
+            {!!activeExercise.notes && <Text style={styles.generalExerciseNote}>{activeExercise.notes}</Text>}
+            {!!routineExercise.notes && <Text style={styles.routineNote}>{routineExercise.notes}</Text>}
+            <Pressable
+              style={styles.noteAction}
+              onPress={() => openNoteEditor(activeWorkout.exerciseIndex, routineExercise.notes ?? '')}
+            >
+              <MaterialIcons color={colors.primary} name={routineExercise.notes ? 'edit-note' : 'note-add'} size={20} />
+              <Text style={styles.noteActionText}>{routineExercise.notes ? 'Editar nota de rutina' : 'Añadir nota de rutina'}</Text>
+            </Pressable>
             <Text style={styles.setMeta}>
               Serie {activeWorkout.setIndex + 1}/{routineExercise.sets.length} · {set.kind} · descanso{' '}
               {formatRestTime(routineExercise.restSeconds)}
@@ -2090,14 +2345,12 @@ function TodayScreen({
 
             <View style={styles.actualGrid}>
               <ActualInput
-                label={`Reps objetivo ${set.targetReps}`}
+                label={set.targetReps === null ? 'Reps al fallo' : `Reps objetivo ${set.targetReps}`}
                 value={actualInput?.reps ?? ''}
                 onChangeText={(value) => updateActualSetValue('reps', value)}
               />
               <ActualInput
-                label={`${preferences.weightUnit} objetivo ${formatDecimal(
-                  displayWeight(set.targetWeightKg, preferences.weightUnit),
-                )}`}
+                label={set.targetWeightKg === null ? `${preferences.weightUnit} por definir` : `${preferences.weightUnit} objetivo ${formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))}`}
                 value={actualInput?.weightKg ?? ''}
                 onChangeText={(value) => updateActualSetValue('weightKg', value)}
               />
@@ -2176,6 +2429,7 @@ function WorkoutOverview({
   completeSetAt,
   deleteSetAt,
   exercises,
+  openNoteEditor,
   openSetEditor,
   skipExerciseInActiveRoutine,
   uncompleteSetAt,
@@ -2186,12 +2440,13 @@ function WorkoutOverview({
   completeSetAt: (exerciseIndex: number, setIndex: number) => void;
   deleteSetAt: (exerciseIndex: number, setIndex: number) => void;
   exercises: Exercise[];
+  openNoteEditor: (exerciseIndex: number, notes: string) => void;
   openSetEditor: (target: SetEditorTarget) => void;
   skipExerciseInActiveRoutine: (exerciseIndex: number) => void;
   uncompleteSetAt: (exerciseIndex: number, setIndex: number) => void;
   updateSetValueAt: (exerciseIndex: number, setIndex: number, field: 'reps' | 'weightKg', value: string) => void;
 }) {
-  const { preferences } = useAppSettings();
+  const { colors, preferences } = useAppSettings();
   return (
     <View style={styles.stack}>
       {activeWorkout.routine.exercises.map((routineExercise, exerciseIndex) => {
@@ -2210,6 +2465,15 @@ function WorkoutOverview({
                 <Text style={[styles.overviewExercise, isCurrentExercise && styles.currentOverviewExercise]}>
                   {exercise?.name ?? 'Ejercicio'}
                 </Text>
+                {!!exercise?.notes && <Text style={styles.generalExerciseNote}>{exercise.notes}</Text>}
+                {!!routineExercise.notes && <Text style={styles.routineNote}>{routineExercise.notes}</Text>}
+                <Pressable
+                  style={styles.noteAction}
+                  onPress={() => openNoteEditor(exerciseIndex, routineExercise.notes ?? '')}
+                >
+                  <MaterialIcons color={colors.primary} name={routineExercise.notes ? 'edit-note' : 'note-add'} size={18} />
+                  <Text style={styles.noteActionText}>{routineExercise.notes ? 'Editar nota' : 'Añadir nota'}</Text>
+                </Pressable>
                 <Text style={styles.overviewRest}>Descanso: {formatRestTime(routineExercise.restSeconds)}</Text>
               </View>
               <Pressable style={styles.skipExerciseButton} onPress={() => skipExerciseInActiveRoutine(exerciseIndex)}>
@@ -2254,7 +2518,7 @@ function WorkoutOverview({
                       style={[styles.setCellInput, isDone && styles.completedSetText]}
                       value={
                         input?.weightKg ??
-                        formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))
+                        (set.targetWeightKg === null ? '' : formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit)))
                       }
                       onChangeText={(value) => updateSetValueAt(exerciseIndex, setIndex, 'weightKg', value)}
                     />
@@ -2262,7 +2526,7 @@ function WorkoutOverview({
                       keyboardType="number-pad"
                       selectTextOnFocus
                       style={[styles.setCellInput, isDone && styles.completedSetText]}
-                      value={input?.reps ?? set.targetReps.toString()}
+                      value={input?.reps ?? set.targetReps?.toString() ?? ''}
                       onChangeText={(value) => updateSetValueAt(exerciseIndex, setIndex, 'reps', value)}
                     />
                     <Pressable
@@ -2317,6 +2581,50 @@ function getSetKindTextStyle(kind: SetKind) {
     return styles.warmupSetKind;
   }
   return null;
+}
+
+function RoutineNoteModal({
+  close,
+  save,
+  setTarget,
+  target,
+}: {
+  close: () => void;
+  save: () => void;
+  setTarget: Dispatch<SetStateAction<{ exerciseIndex: number; notes: string } | null>>;
+  target: { exerciseIndex: number; notes: string } | null;
+}) {
+  if (!target) {
+    return null;
+  }
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={close}>
+      <View style={styles.modalScrim}>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Nota de la rutina</Text>
+          <Text style={styles.modalCopy}>Esta indicación solo se aplicará a este ejercicio dentro de esta rutina.</Text>
+          <TextInput
+            autoFocus
+            multiline
+            placeholder="Técnica, variante, sensaciones..."
+            placeholderTextColor="#7C8797"
+            style={[styles.editorInput, styles.editorTextArea]}
+            value={target.notes}
+            onChangeText={(notes) => setTarget((current) => (current ? { ...current, notes } : current))}
+          />
+          <View style={styles.modalActions}>
+            <Pressable style={styles.modalSecondary} onPress={close}>
+              <Text style={styles.modalSecondaryText}>Cancelar</Text>
+            </Pressable>
+            <Pressable style={styles.modalPrimary} onPress={save}>
+              <Text style={styles.modalPrimaryText}>Guardar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 function SetKindModal({
@@ -2391,27 +2699,252 @@ function KindOption({ active, label, onPress }: { active: boolean; label: string
   );
 }
 
+function DietScreen({
+  diets,
+  exportDiets,
+  importDiets,
+  setCurrentDiet,
+}: {
+  diets: Diet[];
+  exportDiets: () => void;
+  importDiets: () => void;
+  setCurrentDiet: (dietId: string) => void;
+}) {
+  const currentDiet = diets.find((diet) => diet.isCurrent);
+  const historicalDiets = diets.filter((diet) => !diet.isCurrent);
+
+  return (
+    <View style={styles.stack}>
+      <View style={styles.actionRow}>
+        <Pressable style={styles.actionButton} onPress={importDiets}>
+          <Text style={styles.secondaryButtonText}>Importar</Text>
+        </Pressable>
+        <Pressable style={styles.actionButton} onPress={exportDiets}>
+          <Text style={styles.secondaryButtonText}>Exportar</Text>
+        </Pressable>
+      </View>
+
+      {currentDiet ? (
+        <DietDetails diet={currentDiet} />
+      ) : (
+        <View style={styles.hero}>
+          <Text style={styles.sectionLabel}>Dieta actual</Text>
+          <Text style={styles.h1}>Sin dieta activa</Text>
+          <Text style={styles.heroCopy}>Importa una dieta y selecciónala desde el histórico.</Text>
+        </View>
+      )}
+
+      <Text style={styles.sectionLabel}>Histórico</Text>
+      {historicalDiets.map((diet) => (
+        <View key={diet.id} style={styles.panel}>
+          <Text style={styles.panelTitle}>{diet.name}</Text>
+          {!!diet.objective && <Text style={styles.muted}>{diet.objective}</Text>}
+          <Text style={styles.routineLine}>{diet.days.length} días o variantes</Text>
+          <Pressable style={styles.secondaryButton} onPress={() => setCurrentDiet(diet.id)}>
+            <Text style={styles.secondaryButtonText}>Establecer como actual</Text>
+          </Pressable>
+        </View>
+      ))}
+      {!historicalDiets.length && <Text style={styles.emptyText}>Todavía no hay dietas en el histórico.</Text>}
+    </View>
+  );
+}
+
+function DietDetails({ diet }: { diet: Diet }) {
+  return (
+    <View style={styles.stack}>
+      <View style={styles.hero}>
+        <Text style={styles.sectionLabel}>Dieta actual</Text>
+        <Text style={styles.h1}>{diet.name}</Text>
+        {!!diet.objective && <Text style={styles.heroCopy}>{diet.objective}</Text>}
+        {!!diet.startDate && (
+          <Text style={styles.muted}>{diet.startDate}{diet.endDate ? ` — ${diet.endDate}` : ''}</Text>
+        )}
+        {!!diet.notes && <Text style={styles.routineNote}>{diet.notes}</Text>}
+      </View>
+      {diet.days.map((day) => (
+        <View key={day.id} style={styles.panel}>
+          <Text style={styles.panelTitle}>{day.name}</Text>
+          {day.meals.map((meal) => (
+            <View key={meal.id} style={styles.dietMeal}>
+              <Text style={styles.editorLabel}>{meal.name}</Text>
+              {(meal.items ?? []).map((item) => (
+                <Text key={item.id} style={styles.routineLine}>
+                  • {item.name}{item.quantity ? ` · ${item.quantity}` : ''}{item.notes ? ` — ${item.notes}` : ''}
+                </Text>
+              ))}
+              {(meal.entries ?? []).map((entry) =>
+                entry.type === 'item' ? (
+                  <Text key={entry.id} style={styles.routineLine}>
+                    • {entry.item.name}{entry.item.quantity ? ` · ${entry.item.quantity}` : ''}{entry.item.notes ? ` — ${entry.item.notes}` : ''}
+                  </Text>
+                ) : (
+                  <View key={entry.id} style={styles.dietChoice}>
+                    <Text style={styles.dietChoiceLabel}>{entry.label ?? 'Elige una opción'}</Text>
+                    {entry.options.map((option, optionIndex) => (
+                      <Text key={option.id} style={styles.routineLine}>
+                        {optionIndex + 1}. {option.items.map((item) => `${item.quantity ? `${item.quantity} ` : ''}${item.name}`).join(' + ')}{option.notes ? ` — ${option.notes}` : ''}
+                      </Text>
+                    ))}
+                  </View>
+                ),
+              )}
+              {!!meal.notes && <Text style={styles.muted}>{meal.notes}</Text>}
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function RoutinesScreen({
+  assignRoutineToCollection,
+  collections,
+  createCollection,
+  deleteCollection,
   exercises,
+  exportRoutines,
+  importRoutines,
   openRoutineEditor,
   routines,
   startRoutine,
+  toggleRoutineArchived,
+  toggleCollectionArchived,
 }: {
+  assignRoutineToCollection: (routineId: string, collectionName?: string) => void;
+  collections: RoutineCollection[];
+  createCollection: (name: string) => boolean;
+  deleteCollection: (collectionId: string) => void;
   exercises: Exercise[];
+  exportRoutines: () => void;
+  importRoutines: () => void;
   openRoutineEditor: (routine?: Routine) => void;
   routines: Routine[];
   startRoutine: (routine?: Routine) => void;
+  toggleRoutineArchived: (routineId: string) => void;
+  toggleCollectionArchived: (collectionId: string) => void;
 }) {
+  const { colors } = useAppSettings();
+  const [showArchived, setShowArchived] = useState(false);
+  const [selectedCollection, setSelectedCollection] = useState<'all' | 'none' | string>('all');
+  const [showCollectionCreator, setShowCollectionCreator] = useState(false);
+  const [collectionName, setCollectionName] = useState('');
+  const [collectionPickerRoutine, setCollectionPickerRoutine] = useState<Routine | null>(null);
+  const visibleCollections = collections.filter((collection) => Boolean(collection.archivedAt) === showArchived);
+  const visibleRoutines = routines.filter(
+    (routine) => Boolean(routine.archivedAt) === showArchived &&
+      (selectedCollection === 'all' || (selectedCollection === 'none' ? !routine.collection : routine.collection === selectedCollection)),
+  );
+  const groupedRoutines = visibleRoutines.reduce<Record<string, Routine[]>>((groups, routine) => {
+    const collection = routine.collection?.trim() || 'Sin colección';
+    groups[collection] = [...(groups[collection] ?? []), routine];
+    return groups;
+  }, {});
+
+  function requestDeleteCollection(collection: RoutineCollection) {
+    const routineCount = routines.filter((routine) => routine.collection === collection.name).length;
+    Alert.alert(
+      'Eliminar colección',
+      routineCount
+        ? `La colección se eliminará y sus ${routineCount} rutinas pasarán a Sin colección. No se borrará ningún entrenamiento.`
+        : 'La colección se eliminará. No contiene rutinas.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => { deleteCollection(collection.id); setSelectedCollection('all'); } },
+      ],
+    );
+  }
+
   return (
     <View style={styles.stack}>
       <Pressable style={styles.primaryButton} onPress={() => openRoutineEditor()}>
         <Text style={styles.primaryButtonText}>Crear rutina</Text>
       </Pressable>
-      {routines.map((routine) => (
+      <View style={styles.actionRow}>
+        <Pressable style={styles.actionButton} onPress={() => setShowCollectionCreator((current) => !current)}>
+          <Text style={styles.secondaryButtonText}>Crear colección</Text>
+        </Pressable>
+        <Pressable style={styles.actionButton} onPress={importRoutines}>
+          <Text style={styles.secondaryButtonText}>Importar</Text>
+        </Pressable>
+        <Pressable style={styles.actionButton} onPress={exportRoutines}>
+          <Text style={styles.secondaryButtonText}>Exportar</Text>
+        </Pressable>
+      </View>
+      {showCollectionCreator && (
+        <View style={styles.panel}>
+          <Text style={styles.sectionLabel}>Nueva colección</Text>
+          <TextInput placeholder="Nombre de la colección" placeholderTextColor="#7C8797" style={styles.editorInput} value={collectionName} onChangeText={setCollectionName} />
+          <Pressable style={styles.secondaryButton} onPress={() => {
+            if (createCollection(collectionName)) {
+              setCollectionName('');
+              setShowCollectionCreator(false);
+            } else {
+              Alert.alert('Colección no válida', 'Escribe un nombre nuevo para la colección.');
+            }
+          }}>
+            <Text style={styles.secondaryButtonText}>Guardar colección</Text>
+          </Pressable>
+        </View>
+      )}
+      <View style={styles.segmented}>
+        <SegmentButton active={!showArchived} label="Activas" onPress={() => { setShowArchived(false); setSelectedCollection('all'); }} />
+        <SegmentButton active={showArchived} label="Archivadas" onPress={() => { setShowArchived(true); setSelectedCollection('all'); }} />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <KindOption active={selectedCollection === 'all'} label="Todas" onPress={() => setSelectedCollection('all')} />
+        <KindOption active={selectedCollection === 'none'} label="Sin colección" onPress={() => setSelectedCollection('none')} />
+        {visibleCollections.map((collection) => (
+          <KindOption key={collection.id} active={selectedCollection === collection.name} label={collection.name} onPress={() => setSelectedCollection(collection.name)} />
+        ))}
+      </ScrollView>
+      {visibleCollections
+        .filter((collection) => !routines.some((routine) => routine.collection === collection.name && Boolean(routine.archivedAt) === showArchived))
+        .filter((collection) => selectedCollection === 'all' || selectedCollection === collection.name)
+        .map((collection) => (
+          <View key={collection.id} style={styles.panel}>
+            <Text style={styles.panelTitle}>{collection.name}</Text>
+            <Text style={styles.muted}>Esta colección todavía no contiene rutinas.</Text>
+            <Pressable style={styles.secondaryButton} onPress={() => { toggleCollectionArchived(collection.id); setSelectedCollection('all'); }}>
+              <Text style={styles.secondaryButtonText}>{showArchived ? 'Restaurar colección' : 'Archivar colección'}</Text>
+            </Pressable>
+            <Pressable style={styles.fullWidthDanger} onPress={() => requestDeleteCollection(collection)}>
+              <Text style={styles.modalDangerText}>Eliminar colección</Text>
+            </Pressable>
+          </View>
+        ))}
+      {Object.entries(groupedRoutines).map(([collection, collectionRoutines]) => (
+        <View key={collection} style={styles.stack}>
+          <View style={styles.collectionHeader}>
+            <Text style={styles.sectionLabel}>{collection}</Text>
+            {collections.find((item) => item.name === collection) && (
+              <View style={styles.collectionHeaderActions}>
+                <Pressable onPress={() => { toggleCollectionArchived(collections.find((item) => item.name === collection)!.id); setSelectedCollection('all'); }}>
+                  <Text style={styles.collectionAction}>{showArchived ? 'Restaurar' : 'Archivar'}</Text>
+                </Pressable>
+                <Pressable onPress={() => requestDeleteCollection(collections.find((item) => item.name === collection)!)}>
+                  <Text style={styles.collectionDeleteAction}>Eliminar</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+          {collectionRoutines.map((routine) => (
         <View key={routine.id} style={styles.panel}>
-          <Text style={styles.sectionLabel}>
-            {routine.preferredDays?.length ? routine.preferredDays.map((day) => weekdayLabels[day]).join(', ') : 'Sin día sugerido'}
-          </Text>
+          <View style={styles.routineCardHeader}>
+            <Text style={styles.sectionLabel}>
+              {routine.preferredDays?.length ? routine.preferredDays.map((day) => weekdayLabels[day]).join(', ') : 'Sin día sugerido'}
+            </Text>
+            <Pressable
+              accessibilityLabel={`Cambiar colección de ${routine.name}`}
+              accessibilityRole="button"
+              hitSlop={8}
+              style={styles.collectionPickerButton}
+              onPress={() => setCollectionPickerRoutine(routine)}
+            >
+              <MaterialIcons color={colors.primary} name="drive-file-move" size={22} />
+            </Pressable>
+          </View>
           <Text style={styles.panelTitle}>{routine.name}</Text>
           <Text style={styles.muted}>{routine.focus}</Text>
           <View style={styles.exerciseList}>
@@ -2426,15 +2959,53 @@ function RoutinesScreen({
             })}
           </View>
           <View style={styles.actionRow}>
+            <Pressable style={styles.actionButton} onPress={() => toggleRoutineArchived(routine.id)}>
+              <Text style={styles.secondaryButtonText}>{routine.archivedAt ? 'Restaurar' : 'Archivar'}</Text>
+            </Pressable>
             <Pressable style={styles.actionButton} onPress={() => openRoutineEditor(routine)}>
               <Text style={styles.secondaryButtonText}>Editar</Text>
             </Pressable>
-            <Pressable style={styles.actionButtonPrimary} onPress={() => startRoutine(routine)}>
-              <Text style={styles.primaryButtonText}>Iniciar</Text>
+            {!routine.archivedAt && (
+              <Pressable style={styles.actionButtonPrimary} onPress={() => startRoutine(routine)}>
+                <Text style={styles.primaryButtonText}>Iniciar</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+          ))}
+        </View>
+      ))}
+      {!visibleRoutines.length && (
+        <Text style={styles.emptyText}>{showArchived ? 'No hay rutinas archivadas.' : 'No hay rutinas activas.'}</Text>
+      )}
+      <Modal transparent animationType="fade" visible={Boolean(collectionPickerRoutine)} onRequestClose={() => setCollectionPickerRoutine(null)}>
+        <View style={styles.modalScrim}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Mover rutina</Text>
+            <Text style={styles.modalCopy}>{collectionPickerRoutine?.name}</Text>
+            <ScrollView
+              style={styles.collectionPickerList}
+              contentContainerStyle={styles.collectionPickerListContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+            >
+              <KindOption active={!collectionPickerRoutine?.collection} label="Sin colección" onPress={() => {
+                if (collectionPickerRoutine) assignRoutineToCollection(collectionPickerRoutine.id);
+                setCollectionPickerRoutine(null);
+              }} />
+              {collections.filter((collection) => !collection.archivedAt).map((collection) => (
+                <KindOption key={collection.id} active={collectionPickerRoutine?.collection === collection.name} label={collection.name} onPress={() => {
+                  if (collectionPickerRoutine) assignRoutineToCollection(collectionPickerRoutine.id, collection.name);
+                  setCollectionPickerRoutine(null);
+                }} />
+              ))}
+            </ScrollView>
+            <Pressable style={styles.collectionPickerCancel} onPress={() => setCollectionPickerRoutine(null)}>
+              <Text style={styles.modalSecondaryText}>Cancelar</Text>
             </Pressable>
           </View>
         </View>
-      ))}
+      </Modal>
     </View>
   );
 }
@@ -2442,23 +3013,75 @@ function RoutinesScreen({
 function ExercisesScreen({
   exercises,
   openExerciseEditor,
+  toggleExerciseArchived,
 }: {
   exercises: Exercise[];
   openExerciseEditor: (exercise?: Exercise) => void;
+  toggleExerciseArchived: (exerciseId: string) => void;
 }) {
+  const { colors } = useAppSettings();
+  const [query, setQuery] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | 'all'>('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const normalizedQuery = query.trim().toLocaleLowerCase('es');
+  const visibleExercises = exercises.filter(
+    (exercise) =>
+      Boolean(exercise.archivedAt) === showArchived &&
+      (muscleFilter === 'all' || exercise.muscleGroup === muscleFilter) &&
+      (!normalizedQuery || exercise.name.toLocaleLowerCase('es').includes(normalizedQuery)),
+  );
+
   return (
     <View style={styles.stack}>
       <Pressable style={styles.primaryButton} onPress={() => openExerciseEditor()}>
         <Text style={styles.primaryButtonText}>Añadir ejercicio</Text>
       </Pressable>
 
+      <TextInput
+        placeholder="Buscar ejercicio"
+        placeholderTextColor="#7C8797"
+        style={styles.editorInput}
+        value={query}
+        onChangeText={setQuery}
+      />
+      <View style={styles.segmented}>
+        <SegmentButton active={!showArchived} label="Activos" onPress={() => setShowArchived(false)} />
+        <SegmentButton active={showArchived} label="Archivados" onPress={() => setShowArchived(true)} />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <KindOption active={muscleFilter === 'all'} label="Todos" onPress={() => setMuscleFilter('all')} />
+        {muscleOptions.map((muscle) => (
+          <KindOption
+            key={muscle}
+            active={muscleFilter === muscle}
+            label={muscleLabels[muscle]}
+            onPress={() => setMuscleFilter(muscle)}
+          />
+        ))}
+      </ScrollView>
+
       <View style={styles.panel}>
         <Text style={styles.sectionLabel}>Biblioteca</Text>
-        {exercises.map((exercise) => (
-          <Pressable key={exercise.id} onPress={() => openExerciseEditor(exercise)}>
-            <ExerciseRow exercise={exercise} />
-          </Pressable>
+        {visibleExercises.map((exercise) => (
+          <View key={exercise.id} style={styles.exerciseLibraryRow}>
+            <Pressable style={styles.headerTitle} onPress={() => openExerciseEditor(exercise)}>
+              <ExerciseRow exercise={exercise} />
+            </Pressable>
+            <Pressable
+              accessibilityLabel={exercise.archivedAt ? `Restaurar ${exercise.name}` : `Archivar ${exercise.name}`}
+              accessibilityRole="button"
+              style={styles.smallSquareButton}
+              onPress={() => toggleExerciseArchived(exercise.id)}
+            >
+              <MaterialIcons
+                color={colors.text}
+                name={exercise.archivedAt ? 'unarchive' : 'archive'}
+                size={20}
+              />
+            </Pressable>
+          </View>
         ))}
+        {!visibleExercises.length && <Text style={styles.emptyText}>No hay ejercicios con estos filtros.</Text>}
       </View>
     </View>
   );
@@ -2567,6 +3190,7 @@ function ExerciseEditorModal({
 
 function RoutineEditorModal({
   close,
+  collections,
   deleteRoutine,
   draft,
   exercises,
@@ -2575,6 +3199,7 @@ function RoutineEditorModal({
   setDraft,
 }: {
   close: () => void;
+  collections: RoutineCollection[];
   deleteRoutine: (routineId: string) => void;
   draft: RoutineDraft | null;
   exercises: Exercise[];
@@ -2589,7 +3214,8 @@ function RoutineEditorModal({
     return null;
   }
   const availableExercises = exercises.filter(
-    (exercise) => !draft.exercises.some((routineExercise) => routineExercise.exerciseId === exercise.id),
+    (exercise) =>
+      !exercise.archivedAt && !draft.exercises.some((routineExercise) => routineExercise.exerciseId === exercise.id),
   );
 
   function updateRoutineExercise(index: number, patch: Partial<RoutineExercise>) {
@@ -2607,6 +3233,7 @@ function RoutineEditorModal({
     const routineExercise: RoutineExercise = {
       id: `routine-exercise-${Date.now()}`,
       exerciseId: exercise.id,
+      notes: '',
       restSeconds: 90,
       sets: [{ id: `set-${Date.now()}`, kind: 'normal', targetReps: 10, targetWeightKg: 0 }],
     };
@@ -2734,6 +3361,13 @@ function RoutineEditorModal({
                 value={draft.focus}
                 onChangeText={(focus) => setDraft((current) => (current ? { ...current, focus } : current))}
               />
+              <Text style={styles.editorLabel}>Colección</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+                <KindOption active={!draft.collection} label="Sin colección" onPress={() => setDraft((current) => current ? { ...current, collection: '' } : current)} />
+                {collections.filter((collection) => !collection.archivedAt).map((collection) => (
+                  <KindOption key={collection.id} active={draft.collection === collection.name} label={collection.name} onPress={() => setDraft((current) => current ? { ...current, collection: collection.name } : current)} />
+                ))}
+              </ScrollView>
               <Text style={styles.editorLabel}>Días sugeridos</Text>
               <MultiOptionGrid
                 options={weekdayOptions}
@@ -2853,6 +3487,14 @@ function RoutineEditorModal({
                     </View>
                     {!isCollapsed && (
                       <>
+                    <TextInput
+                      multiline
+                      placeholder="Notas para este ejercicio en la rutina"
+                      placeholderTextColor="#7C8797"
+                      style={[styles.editorInput, styles.editorTextArea]}
+                      value={routineExercise.notes ?? ''}
+                      onChangeText={(notes) => updateRoutineExercise(exerciseIndex, { notes })}
+                    />
                     <RestTimeInput
                       restSeconds={routineExercise.restSeconds}
                       onChange={(restSeconds) => updateRoutineExercise(exerciseIndex, { restSeconds })}
@@ -2878,7 +3520,7 @@ function RoutineEditorModal({
                           placeholder={preferences.weightUnit}
                           placeholderTextColor="#7C8797"
                           style={styles.routineSetInput}
-                          value={formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))}
+                          value={set.targetWeightKg === null ? '' : formatDecimal(displayWeight(set.targetWeightKg, preferences.weightUnit))}
                           onChangeText={(targetWeight) =>
                             updateSet(exerciseIndex, setIndex, {
                               targetWeightKg: weightToKg(
@@ -2893,9 +3535,9 @@ function RoutineEditorModal({
                           placeholder="Reps"
                           placeholderTextColor="#7C8797"
                           style={styles.routineSetInput}
-                          value={set.targetReps.toString()}
+                          value={set.targetReps?.toString() ?? ''}
                           onChangeText={(targetReps) =>
-                            updateSet(exerciseIndex, setIndex, { targetReps: Number.parseInt(targetReps, 10) || 0 })
+                            updateSet(exerciseIndex, setIndex, { targetReps: targetReps.trim() ? Number.parseInt(targetReps, 10) || 0 : null })
                           }
                         />
                         <Pressable style={styles.smallSquareButton} onPress={() => removeRoutineSet(exerciseIndex, setIndex)}>
@@ -3928,6 +4570,7 @@ function createStyles(theme: ThemeColors) {
   secondaryButtonText: {
     color: resolveLegacyColor('#7DD3C7', theme),
     fontWeight: '900',
+    textAlign: 'center',
   },
   actionRow: {
     flexDirection: 'row',
@@ -4058,6 +4701,32 @@ function createStyles(theme: ThemeColors) {
     color: resolveLegacyColor('#111A1F', theme),
     fontSize: 28,
     fontWeight: '900',
+  },
+  routineNote: {
+    color: resolveLegacyColor('#697781', theme),
+    fontSize: 14,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    borderLeftWidth: 3,
+    borderLeftColor: resolveLegacyColor('#7DD3C7', theme),
+    paddingLeft: 10,
+  },
+  generalExerciseNote: {
+    color: theme.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  noteAction: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  noteActionText: {
+    color: theme.primary,
+    fontSize: 13,
+    fontWeight: '800',
   },
   setMeta: {
     color: resolveLegacyColor('#54616B', theme),
@@ -4581,30 +5250,109 @@ function createStyles(theme: ThemeColors) {
     gap: 8,
     marginTop: 18,
   },
+  collectionPickerList: {
+    maxHeight: 154,
+    marginTop: 12,
+  },
+  collectionPickerListContent: {
+    gap: 8,
+  },
+  collectionPickerCancel: {
+    minHeight: 48,
+    width: '100%',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+  },
+  filterRow: {
+    gap: 8,
+    paddingVertical: 4,
+  },
   kindOption: {
     minHeight: 46,
+    minWidth: 92,
+    paddingHorizontal: 14,
     borderRadius: 8,
     backgroundColor: resolveLegacyColor('#D9E2DF', theme),
     alignItems: 'center',
     justifyContent: 'center',
   },
   kindOptionActive: {
-    backgroundColor: resolveLegacyColor('#111A1F', theme),
+    backgroundColor: theme.primary,
   },
   kindOptionText: {
     color: resolveLegacyColor('#52606A', theme),
     fontWeight: '900',
   },
   kindOptionTextActive: {
-    color: resolveLegacyColor('#F7FAFC', theme),
+    color: theme.onPrimary,
   },
   exerciseList: {
     marginTop: 12,
     gap: 8,
   },
+  collectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  routineCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  collectionPickerButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.borderStrong,
+    backgroundColor: theme.surfaceElevated,
+  },
+  collectionAction: {
+    color: theme.warning,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  collectionHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  collectionDeleteAction: {
+    color: theme.danger,
+    fontSize: 12,
+    fontWeight: '900',
+  },
   routineLine: {
     color: resolveLegacyColor('#D6DEE5', theme),
     fontSize: 14,
+  },
+  dietMeal: {
+    marginTop: 14,
+    gap: 7,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  dietChoice: {
+    gap: 5,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: theme.surfaceElevated,
+  },
+  dietChoiceLabel: {
+    color: theme.warning,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   inputRow: {
     flexDirection: 'row',
@@ -4628,6 +5376,11 @@ function createStyles(theme: ThemeColors) {
     borderBottomWidth: 1,
     borderBottomColor: resolveLegacyColor('#26343E', theme),
     gap: 14,
+  },
+  exerciseLibraryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   exerciseRowName: {
     color: resolveLegacyColor('#F7FAFC', theme),

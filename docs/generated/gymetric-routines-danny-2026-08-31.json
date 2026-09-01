@@ -1,0 +1,4442 @@
+{
+  "format": "gymetric-routines",
+  "schemaVersion": 1,
+  "exportedAt": "2026-09-01T13:34:35.436Z",
+  "exercises": [
+    {
+      "id": "trainer-inclinePress",
+      "name": "Press inclinado con mancuernas",
+      "muscleGroup": "chest",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-inclineFly",
+      "name": "Aperturas inclinadas",
+      "muscleGroup": "chest",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-bench",
+      "name": "Press banca plano",
+      "muscleGroup": "chest",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-flatFly",
+      "name": "Aperturas planas",
+      "muscleGroup": "chest",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-dips",
+      "name": "Fondos",
+      "muscleGroup": "chest",
+      "equipment": "Peso corporal",
+      "equipmentKind": "bodyweight",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-trunk",
+      "name": "Flexión de tronco",
+      "muscleGroup": "core",
+      "equipment": "Peso corporal",
+      "equipmentKind": "bodyweight",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-hipRaise",
+      "name": "Elevaciones de cadera",
+      "muscleGroup": "core",
+      "equipment": "Peso corporal",
+      "equipmentKind": "bodyweight",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-pulldown",
+      "name": "Jalón al frente",
+      "muscleGroup": "back",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-seatedRow",
+      "name": "Remo sentado",
+      "muscleGroup": "back",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-reversePulldown",
+      "name": "Jalón con agarre invertido",
+      "muscleGroup": "back",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-barRow",
+      "name": "Remo con barra",
+      "muscleGroup": "back",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-pullover",
+      "name": "Pull over",
+      "muscleGroup": "back",
+      "equipment": "Otro",
+      "equipmentKind": "other",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-standingCalf",
+      "name": "Gemelo de pie",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-seatedCalf",
+      "name": "Gemelo sentado",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-inclineLegPress",
+      "name": "Prensa inclinada",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-extension",
+      "name": "Extensiones de cuádriceps",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-hack",
+      "name": "Sentadilla hack",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-flatLegPress",
+      "name": "Prensa plana",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-machineShoulder",
+      "name": "Press de hombro en máquina",
+      "muscleGroup": "shoulders",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-frontRaise",
+      "name": "Elevación frontal con barra o disco",
+      "muscleGroup": "shoulders",
+      "equipment": "Barra o disco",
+      "equipmentKind": "free_weight",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-uprightRow",
+      "name": "Remo al cuello",
+      "muscleGroup": "shoulders",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-lateralRaise",
+      "name": "Elevaciones laterales",
+      "muscleGroup": "shoulders",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-reverseFly",
+      "name": "Pájaros",
+      "muscleGroup": "shoulders",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-shrug",
+      "name": "Encogimientos de trapecio",
+      "muscleGroup": "shoulders",
+      "equipment": "Peso libre",
+      "equipmentKind": "free_weight",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-pushdown",
+      "name": "Jalones rectos de tríceps",
+      "muscleGroup": "arms",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-french",
+      "name": "Press francés con barra",
+      "muscleGroup": "arms",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-rope",
+      "name": "Jalones de tríceps con cuerda",
+      "muscleGroup": "arms",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-kickback",
+      "name": "Patadas de tríceps en polea",
+      "muscleGroup": "arms",
+      "equipment": "Polea",
+      "equipmentKind": "cable",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-barCurl",
+      "name": "Curl con barra",
+      "muscleGroup": "arms",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-dumbbellCurl",
+      "name": "Curl con mancuernas",
+      "muscleGroup": "arms",
+      "equipment": "Mancuernas",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-scott",
+      "name": "Curl Scott",
+      "muscleGroup": "arms",
+      "equipment": "Banco Scott",
+      "equipmentKind": "other",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-concentration",
+      "name": "Curl concentrado",
+      "muscleGroup": "arms",
+      "equipment": "Mancuerna",
+      "equipmentKind": "dumbbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-lyingCurl",
+      "name": "Curl femoral tumbado",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-deadlift",
+      "name": "Peso muerto con barra",
+      "muscleGroup": "legs",
+      "equipment": "Barra",
+      "equipmentKind": "barbell",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-closeLyingCurl",
+      "name": "Curl femoral tumbado con pies juntos",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    },
+    {
+      "id": "trainer-adductor",
+      "name": "Aductor",
+      "muscleGroup": "legs",
+      "equipment": "Máquina",
+      "equipmentKind": "machine",
+      "notes": "",
+      "isCustom": true
+    }
+  ],
+  "routines": [
+    {
+      "id": "plan6-g1",
+      "name": "Grupo 1 · Pectoral y abdominales",
+      "focus": "Grupo 1 · Pectoral y abdominales",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "monday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-inclinePress-1",
+          "exerciseId": "trainer-inclinePress",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-inclinePress-1-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-inclineFly-2",
+          "exerciseId": "trainer-inclineFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-inclineFly-2-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-bench-3",
+          "exerciseId": "trainer-bench",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-bench-3-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-flatFly-4",
+          "exerciseId": "trainer-flatFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-flatFly-4-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-flatFly-4-s3-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-dips-5",
+          "exerciseId": "trainer-dips",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-dips-5-s1",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dips-5-s2",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dips-5-s3",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-trunk-6",
+          "exerciseId": "trainer-trunk",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-trunk-6-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-hipRaise-7",
+          "exerciseId": "trainer-hipRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-hipRaise-7-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s2"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s2"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s3"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3-d2"
+        },
+        {
+          "routineExerciseId": "rx-dips-5",
+          "setId": "rx-dips-5-s1"
+        },
+        {
+          "routineExerciseId": "rx-dips-5",
+          "setId": "rx-dips-5-s2"
+        },
+        {
+          "routineExerciseId": "rx-dips-5",
+          "setId": "rx-dips-5-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s1"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s2"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s4"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s1"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s2"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s3"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s4"
+        }
+      ]
+    },
+    {
+      "id": "plan6-g2",
+      "name": "Grupo 2 · Espalda y gemelo",
+      "focus": "Grupo 2 · Espalda y gemelo",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "tuesday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-pulldown-8",
+          "exerciseId": "trainer-pulldown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-pulldown-8-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedRow-9",
+          "exerciseId": "trainer-seatedRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedRow-9-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-reversePulldown-10",
+          "exerciseId": "trainer-reversePulldown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-reversePulldown-10-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-barRow-11",
+          "exerciseId": "trainer-barRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-barRow-11-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-barRow-11-s3-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-pullover-12",
+          "exerciseId": "trainer-pullover",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-pullover-12-s1",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pullover-12-s2",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pullover-12-s3",
+              "kind": "normal",
+              "targetReps": 15,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-standingCalf-13",
+          "exerciseId": "trainer-standingCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-standingCalf-13-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedCalf-14",
+          "exerciseId": "trainer-seatedCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedCalf-14-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s1"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s1"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s3"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s2"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s2"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s3"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3-d2"
+        },
+        {
+          "routineExerciseId": "rx-pullover-12",
+          "setId": "rx-pullover-12-s1"
+        },
+        {
+          "routineExerciseId": "rx-pullover-12",
+          "setId": "rx-pullover-12-s2"
+        },
+        {
+          "routineExerciseId": "rx-pullover-12",
+          "setId": "rx-pullover-12-s3"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s1"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s2"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s3"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s4"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s4"
+        }
+      ]
+    },
+    {
+      "id": "plan6-g3",
+      "name": "Grupo 3 · Cuádriceps y abdominales",
+      "focus": "Grupo 3 · Cuádriceps y abdominales",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "wednesday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-inclineLegPress-15",
+          "exerciseId": "trainer-inclineLegPress",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-inclineLegPress-15-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-extension-16",
+          "exerciseId": "trainer-extension",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-extension-16-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-extension-16-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-extension-16-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-hack-17",
+          "exerciseId": "trainer-hack",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-hack-17-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-flatLegPress-18",
+          "exerciseId": "trainer-flatLegPress",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-flatLegPress-18-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatLegPress-18-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatLegPress-18-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-trunk-19",
+          "exerciseId": "trainer-trunk",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-trunk-19-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-hipRaise-20",
+          "exerciseId": "trainer-hipRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-hipRaise-20-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s4"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s2"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s3"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s1"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s2"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s3"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s4"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s2"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s1"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s2"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s4"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s1"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s2"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s3"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s4"
+        }
+      ]
+    },
+    {
+      "id": "plan6-g4",
+      "name": "Grupo 4 · Hombro",
+      "focus": "Grupo 4 · Hombro",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "thursday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-machineShoulder-21",
+          "exerciseId": "trainer-machineShoulder",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-machineShoulder-21-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-frontRaise-22",
+          "exerciseId": "trainer-frontRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-frontRaise-22-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-uprightRow-23",
+          "exerciseId": "trainer-uprightRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-uprightRow-23-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-lateralRaise-24",
+          "exerciseId": "trainer-lateralRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-lateralRaise-24-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-lateralRaise-24-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-lateralRaise-24-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-reverseFly-25",
+          "exerciseId": "trainer-reverseFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-reverseFly-25-s1",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s2",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-reverseFly-25-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-reverseFly-25-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-shrug-26",
+          "exerciseId": "trainer-shrug",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-shrug-26-s1",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s2",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s3",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s4",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s1"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s2"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s1"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s3"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s2"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s3"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s2"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s2"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s3"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s3"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s2"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s3"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s1"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s2"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s3"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s4"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s4-d1"
+        }
+      ]
+    },
+    {
+      "id": "plan6-g5",
+      "name": "Grupo 5 · Tríceps y bíceps",
+      "focus": "Grupo 5 · Tríceps y bíceps",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "friday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-pushdown-27",
+          "exerciseId": "trainer-pushdown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-pushdown-27-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-french-28",
+          "exerciseId": "trainer-french",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-french-28-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-rope-29",
+          "exerciseId": "trainer-rope",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-rope-29-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-kickback-30",
+          "exerciseId": "trainer-kickback",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-kickback-30-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-kickback-30-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-kickback-30-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-kickback-30-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-barCurl-31",
+          "exerciseId": "trainer-barCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-barCurl-31-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-dumbbellCurl-32",
+          "exerciseId": "trainer-dumbbellCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-dumbbellCurl-32-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-scott-33",
+          "exerciseId": "trainer-scott",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-scott-33-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-concentration-34",
+          "exerciseId": "trainer-concentration",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-concentration-34-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-concentration-34-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-concentration-34-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s1"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s2"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s1"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s3"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s2"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s3"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s1"
+        },
+        {
+          "routineExerciseId": "rx-kickback-30",
+          "setId": "rx-kickback-30-s1"
+        },
+        {
+          "routineExerciseId": "rx-kickback-30",
+          "setId": "rx-kickback-30-s2"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s2"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s3"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-kickback-30",
+          "setId": "rx-kickback-30-s3"
+        },
+        {
+          "routineExerciseId": "rx-kickback-30",
+          "setId": "rx-kickback-30-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s1"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s2"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s1"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s3"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s2"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s3"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s1"
+        },
+        {
+          "routineExerciseId": "rx-concentration-34",
+          "setId": "rx-concentration-34-s1"
+        },
+        {
+          "routineExerciseId": "rx-concentration-34",
+          "setId": "rx-concentration-34-s2"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s2"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s3"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-concentration-34",
+          "setId": "rx-concentration-34-s3"
+        }
+      ]
+    },
+    {
+      "id": "plan6-g6",
+      "name": "Grupo 6 · Femoral y gemelo",
+      "focus": "Grupo 6 · Femoral y gemelo",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "saturday"
+      ],
+      "collection": "Plan 31-08-26 · 6 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-lyingCurl-35",
+          "exerciseId": "trainer-lyingCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-lyingCurl-35-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-deadlift-36",
+          "exerciseId": "trainer-deadlift",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-deadlift-36-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-closeLyingCurl-37",
+          "exerciseId": "trainer-closeLyingCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-closeLyingCurl-37-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-adductor-38",
+          "exerciseId": "trainer-adductor",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-adductor-38-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedCalf-39",
+          "exerciseId": "trainer-seatedCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedCalf-39-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-standingCalf-40",
+          "exerciseId": "trainer-standingCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-standingCalf-40-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s1"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s2"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s3"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s4"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s1"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s2"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s3"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s1"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s2"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s3"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s4"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s1"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s2"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s3"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s4"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s4"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s1"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s2"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s3"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s4"
+        }
+      ]
+    },
+    {
+      "id": "plan5-g1",
+      "name": "Día 1 · Pectoral y tríceps",
+      "focus": "Día 1 · Pectoral y tríceps",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "monday"
+      ],
+      "collection": "Plan 31-08-26 · 5 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-inclinePress-1",
+          "exerciseId": "trainer-inclinePress",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-inclinePress-1-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclinePress-1-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-inclineFly-2",
+          "exerciseId": "trainer-inclineFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-inclineFly-2-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineFly-2-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-bench-3",
+          "exerciseId": "trainer-bench",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-bench-3-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-bench-3-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-flatFly-4",
+          "exerciseId": "trainer-flatFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-flatFly-4-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatFly-4-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-flatFly-4-s3-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-trunk-6",
+          "exerciseId": "trainer-trunk",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-trunk-6-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-6-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-hipRaise-7",
+          "exerciseId": "trainer-hipRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-hipRaise-7-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-7-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-pushdown-27",
+          "exerciseId": "trainer-pushdown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-pushdown-27-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pushdown-27-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-french-28",
+          "exerciseId": "trainer-french",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-french-28-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-french-28-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-rope-29",
+          "exerciseId": "trainer-rope",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-rope-29-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-rope-29-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclinePress-1",
+          "setId": "rx-inclinePress-1-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclineFly-2",
+          "setId": "rx-inclineFly-2-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s2"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s2"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s3"
+        },
+        {
+          "routineExerciseId": "rx-bench-3",
+          "setId": "rx-bench-3-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatFly-4",
+          "setId": "rx-flatFly-4-s3-d2"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s1"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s2"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-6",
+          "setId": "rx-trunk-6-s4"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s1"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s2"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s3"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-7",
+          "setId": "rx-hipRaise-7-s4"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s1"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s2"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s1"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s3"
+        },
+        {
+          "routineExerciseId": "rx-pushdown-27",
+          "setId": "rx-pushdown-27-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s2"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s3"
+        },
+        {
+          "routineExerciseId": "rx-french-28",
+          "setId": "rx-french-28-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s1"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s2"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s3"
+        },
+        {
+          "routineExerciseId": "rx-rope-29",
+          "setId": "rx-rope-29-s3-d1"
+        }
+      ]
+    },
+    {
+      "id": "plan5-g2",
+      "name": "Día 2 · Espalda y bíceps",
+      "focus": "Día 2 · Espalda y bíceps",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "tuesday"
+      ],
+      "collection": "Plan 31-08-26 · 5 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-pulldown-8",
+          "exerciseId": "trainer-pulldown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-pulldown-8-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-pulldown-8-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedRow-9",
+          "exerciseId": "trainer-seatedRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedRow-9-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedRow-9-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-reversePulldown-10",
+          "exerciseId": "trainer-reversePulldown",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-reversePulldown-10-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reversePulldown-10-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-barRow-11",
+          "exerciseId": "trainer-barRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-barRow-11-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barRow-11-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-barRow-11-s3-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-standingCalf-13",
+          "exerciseId": "trainer-standingCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-standingCalf-13-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-13-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedCalf-14",
+          "exerciseId": "trainer-seatedCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedCalf-14-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-14-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-barCurl-31",
+          "exerciseId": "trainer-barCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-barCurl-31-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-barCurl-31-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-dumbbellCurl-32",
+          "exerciseId": "trainer-dumbbellCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-dumbbellCurl-32-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-dumbbellCurl-32-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-scott-33",
+          "exerciseId": "trainer-scott",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-scott-33-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-scott-33-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s1"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s1"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s3"
+        },
+        {
+          "routineExerciseId": "rx-pulldown-8",
+          "setId": "rx-pulldown-8-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedRow-9",
+          "setId": "rx-seatedRow-9-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s2"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s2"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s3"
+        },
+        {
+          "routineExerciseId": "rx-reversePulldown-10",
+          "setId": "rx-reversePulldown-10-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-barRow-11",
+          "setId": "rx-barRow-11-s3-d2"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s1"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s2"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s3"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-13",
+          "setId": "rx-standingCalf-13-s4"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-14",
+          "setId": "rx-seatedCalf-14-s4"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s1"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s2"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s1"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s3"
+        },
+        {
+          "routineExerciseId": "rx-barCurl-31",
+          "setId": "rx-barCurl-31-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s2"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s3"
+        },
+        {
+          "routineExerciseId": "rx-dumbbellCurl-32",
+          "setId": "rx-dumbbellCurl-32-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s1"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s2"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s3"
+        },
+        {
+          "routineExerciseId": "rx-scott-33",
+          "setId": "rx-scott-33-s3-d1"
+        }
+      ]
+    },
+    {
+      "id": "plan5-g3",
+      "name": "Día 3 · Cuádriceps y abdominales",
+      "focus": "Día 3 · Cuádriceps y abdominales",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "wednesday"
+      ],
+      "collection": "Plan 31-08-26 · 5 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-inclineLegPress-15",
+          "exerciseId": "trainer-inclineLegPress",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-inclineLegPress-15-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-inclineLegPress-15-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-extension-16",
+          "exerciseId": "trainer-extension",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-extension-16-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-extension-16-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-extension-16-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-extension-16-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-hack-17",
+          "exerciseId": "trainer-hack",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-hack-17-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hack-17-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-flatLegPress-18",
+          "exerciseId": "trainer-flatLegPress",
+          "restSeconds": 150,
+          "sets": [
+            {
+              "id": "rx-flatLegPress-18-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatLegPress-18-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-flatLegPress-18-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-trunk-19",
+          "exerciseId": "trainer-trunk",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-trunk-19-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-trunk-19-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-hipRaise-20",
+          "exerciseId": "trainer-hipRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-hipRaise-20-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-hipRaise-20-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s1"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s2"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s3"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s4"
+        },
+        {
+          "routineExerciseId": "rx-inclineLegPress-15",
+          "setId": "rx-inclineLegPress-15-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s2"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s3"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-extension-16",
+          "setId": "rx-extension-16-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s1"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s2"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s3"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s4"
+        },
+        {
+          "routineExerciseId": "rx-hack-17",
+          "setId": "rx-hack-17-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s1"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s2"
+        },
+        {
+          "routineExerciseId": "rx-flatLegPress-18",
+          "setId": "rx-flatLegPress-18-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s1"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s2"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s3"
+        },
+        {
+          "routineExerciseId": "rx-trunk-19",
+          "setId": "rx-trunk-19-s4"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s1"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s2"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s3"
+        },
+        {
+          "routineExerciseId": "rx-hipRaise-20",
+          "setId": "rx-hipRaise-20-s4"
+        }
+      ]
+    },
+    {
+      "id": "plan5-g4",
+      "name": "Día 4 · Hombro",
+      "focus": "Día 4 · Hombro",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "thursday"
+      ],
+      "collection": "Plan 31-08-26 · 5 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-machineShoulder-21",
+          "exerciseId": "trainer-machineShoulder",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-machineShoulder-21-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-machineShoulder-21-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-frontRaise-22",
+          "exerciseId": "trainer-frontRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-frontRaise-22-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-frontRaise-22-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-uprightRow-23",
+          "exerciseId": "trainer-uprightRow",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-uprightRow-23-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-uprightRow-23-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-lateralRaise-24",
+          "exerciseId": "trainer-lateralRaise",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-lateralRaise-24-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s3",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-lateralRaise-24-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lateralRaise-24-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-lateralRaise-24-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-reverseFly-25",
+          "exerciseId": "trainer-reverseFly",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-reverseFly-25-s1",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s2",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-reverseFly-25-s4",
+              "kind": "normal",
+              "targetReps": 10,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-reverseFly-25-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            },
+            {
+              "id": "rx-reverseFly-25-s4-d2",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-shrug-26",
+          "exerciseId": "trainer-shrug",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-shrug-26-s1",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s2",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s3",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s4",
+              "kind": "normal",
+              "targetReps": 14,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-shrug-26-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s1"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s2"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s1"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s3"
+        },
+        {
+          "routineExerciseId": "rx-machineShoulder-21",
+          "setId": "rx-machineShoulder-21-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s2"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s3"
+        },
+        {
+          "routineExerciseId": "rx-frontRaise-22",
+          "setId": "rx-frontRaise-22-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s2"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s2"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s3"
+        },
+        {
+          "routineExerciseId": "rx-uprightRow-23",
+          "setId": "rx-uprightRow-23-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s3"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-lateralRaise-24",
+          "setId": "rx-lateralRaise-24-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s2"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s3"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-reverseFly-25",
+          "setId": "rx-reverseFly-25-s4-d2"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s1"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s2"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s3"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s4"
+        },
+        {
+          "routineExerciseId": "rx-shrug-26",
+          "setId": "rx-shrug-26-s4-d1"
+        }
+      ]
+    },
+    {
+      "id": "plan5-g5",
+      "name": "Día 5 · Femoral y gemelo",
+      "focus": "Día 5 · Femoral y gemelo",
+      "estimatedMinutes": 75,
+      "preferredDays": [
+        "friday"
+      ],
+      "collection": "Plan 31-08-26 · 5 días",
+      "notes": "90 segundos de descanso salvo indicación específica. Antes: 10 g BCAAs + 10 g glutamina + 3 g creatina + 1 g betalanina. Durante: 1,5 l agua + 2 g sal marina. Después: 10 g MAPS + 3 g creatina + 1 g betalanina.",
+      "conditioning": "35 minutos de cardio después del entrenamiento o en ayunas.",
+      "exercises": [
+        {
+          "id": "rx-lyingCurl-35",
+          "exerciseId": "trainer-lyingCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-lyingCurl-35-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-lyingCurl-35-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-deadlift-36",
+          "exerciseId": "trainer-deadlift",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-deadlift-36-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-deadlift-36-s3-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-closeLyingCurl-37",
+          "exerciseId": "trainer-closeLyingCurl",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-closeLyingCurl-37-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-closeLyingCurl-37-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-adductor-38",
+          "exerciseId": "trainer-adductor",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-adductor-38-s1",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s2",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s3",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s4",
+              "kind": "normal",
+              "targetReps": 12,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-adductor-38-s4-d1",
+              "kind": "drop",
+              "targetReps": null,
+              "targetWeightKg": null,
+              "toFailure": true
+            }
+          ]
+        },
+        {
+          "id": "rx-seatedCalf-39",
+          "exerciseId": "trainer-seatedCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-seatedCalf-39-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-seatedCalf-39-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        },
+        {
+          "id": "rx-standingCalf-40",
+          "exerciseId": "trainer-standingCalf",
+          "restSeconds": 90,
+          "sets": [
+            {
+              "id": "rx-standingCalf-40-s1",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s2",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s3",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            },
+            {
+              "id": "rx-standingCalf-40-s4",
+              "kind": "normal",
+              "targetReps": 18,
+              "targetWeightKg": null
+            }
+          ]
+        }
+      ],
+      "executionSequence": [
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s1"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s2"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s3"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s4"
+        },
+        {
+          "routineExerciseId": "rx-lyingCurl-35",
+          "setId": "rx-lyingCurl-35-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s1"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s2"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s3"
+        },
+        {
+          "routineExerciseId": "rx-deadlift-36",
+          "setId": "rx-deadlift-36-s3-d1"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s1"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s2"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s3"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s4"
+        },
+        {
+          "routineExerciseId": "rx-closeLyingCurl-37",
+          "setId": "rx-closeLyingCurl-37-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s1"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s2"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s3"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s4"
+        },
+        {
+          "routineExerciseId": "rx-adductor-38",
+          "setId": "rx-adductor-38-s4-d1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s1"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s2"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s3"
+        },
+        {
+          "routineExerciseId": "rx-seatedCalf-39",
+          "setId": "rx-seatedCalf-39-s4"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s1"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s2"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s3"
+        },
+        {
+          "routineExerciseId": "rx-standingCalf-40",
+          "setId": "rx-standingCalf-40-s4"
+        }
+      ]
+    }
+  ]
+}

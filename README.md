@@ -17,6 +17,11 @@ App personal para planificar rutinas de gimnasio, ejecutar sesiones guiadas y se
 - Creación y edición de ejercicios con grupo muscular, equipo, agarre y foco opcional.
 - Eliminación de ejercicios de la biblioteca.
 - Creación y edición de rutinas con días sugeridos, ejercicios, orden, descansos y series.
+- Colecciones persistentes de rutinas, con creación, asignación, filtros y archivo/restauración del bloque completo sin perder el histórico.
+- Notas contextuales por ejercicio dentro de cada rutina, visibles durante el entrenamiento.
+- Búsqueda, filtros por grupo muscular y archivo de ejercicios.
+- Importación y exportación acumulativa de rutinas en formato JSON de Gymetric.
+- Pestaña de dieta actual e histórico, con importación, exportación y selección de dieta activa.
 - Eliminación de rutinas.
 - Editor de rutina con lista de ejercicios disponibles filtrada y scrollable.
 - Configuración de descanso por minutos y segundos.
@@ -52,6 +57,22 @@ npm run web
 npx tsc --noEmit
 npx eas-cli build -p android --profile preview
 ```
+
+Para abrir el proyecto en el development build instalado en el móvil:
+
+```bash
+npm run dev-client
+```
+
+El móvil y el ordenador deben poder comunicarse por la misma red. Los cambios de JavaScript/TypeScript se actualizan sin generar otro APK; solo hace falta reconstruir el development build cuando cambian dependencias o configuración nativa.
+
+## Intercambio de rutinas
+
+La pestaña Rutinas permite exportar la biblioteca a un archivo `gymetric-routines-AAAA-MM-DD.json` e importar archivos del mismo formato sin reemplazar los datos existentes. Los ejercicios coincidentes por nombre y tipo de equipamiento se reutilizan; las rutinas importadas se añaden como nuevas y quedan activas.
+
+La pestaña Dieta utiliza archivos `gymetric-diets-AAAA-MM-DD.json`. Las dietas importadas se añaden al histórico y deben marcarse explícitamente como actuales. Hay un ejemplo completo en `docs/gymetric-diets.example.json` que sirve como contrato para convertir documentos del entrenador.
+
+Los formatos aceptan pesos y repeticiones sin definir, drops al fallo, secuencias intercaladas de series y grupos de alternativas alimentarias. Los planes convertidos del 31-08-26 están disponibles en `docs/generated/`.
 
 ## APK de prueba
 

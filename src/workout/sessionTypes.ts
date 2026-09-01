@@ -1,6 +1,6 @@
 import { Achievement, Routine, SetLog } from '../domain/types';
 
-export type Tab = 'today' | 'routines' | 'exercises' | 'progress';
+export type Tab = 'today' | 'routines' | 'diet' | 'exercises' | 'progress';
 
 export type WorkoutView = 'focus' | 'overview';
 

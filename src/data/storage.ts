@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { AppPreferences, defaultAppPreferences, normalizeAppPreferences } from '../domain/preferences';
-import { Achievement, BodyMeasurement, BodyProfile, Exercise, ProgressPhoto, Routine, SetLog } from '../domain/types';
+import { Achievement, BodyMeasurement, BodyProfile, Diet, Exercise, ProgressPhoto, Routine, RoutineCollection, SetLog } from '../domain/types';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './seed';
 
 type StoredRow = {
@@ -15,6 +15,8 @@ type TransactionExecutor = {
 export type PersistedData = {
   exercises: Exercise[];
   routines: Routine[];
+  routineCollections: RoutineCollection[];
+  diets: Diet[];
   logs: SetLog[];
   achievements: Achievement[];
   bodyProfile: BodyProfile | null;
@@ -47,6 +49,20 @@ async function openAndPrepareDatabase() {
   `);
   await db.runAsync(`
     CREATE TABLE IF NOT EXISTS routines (
+      id TEXT PRIMARY KEY NOT NULL,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await db.runAsync(`
+    CREATE TABLE IF NOT EXISTS diets (
+      id TEXT PRIMARY KEY NOT NULL,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await db.runAsync(`
+    CREATE TABLE IF NOT EXISTS routine_collections (
       id TEXT PRIMARY KEY NOT NULL,
       data TEXT NOT NULL,
       updated_at INTEGER NOT NULL
@@ -127,6 +143,8 @@ async function seedDatabase(db: SQLite.SQLiteDatabase) {
   await db.withExclusiveTransactionAsync(async (txn) => {
     await replaceTableInTransaction(txn, 'exercises', seedExercises, now);
     await replaceTableInTransaction(txn, 'routines', seedRoutines, now);
+    await replaceTableInTransaction(txn, 'diets', [], now);
+    await replaceTableInTransaction(txn, 'routine_collections', [], now);
     await replaceTableInTransaction(txn, 'set_logs', seedLogs, now);
     await replaceTableInTransaction(txn, 'achievements', seedAchievements, now);
     await replaceTableInTransaction(txn, 'body_measurements', [], now);
@@ -146,6 +164,8 @@ export async function loadPersistedData(): Promise<PersistedData> {
   const data = {
     exercises: await loadTable<Exercise>(db, 'exercises'),
     routines: await loadTable<Routine>(db, 'routines'),
+    diets: await loadTable<Diet>(db, 'diets'),
+    routineCollections: await loadTable<RoutineCollection>(db, 'routine_collections'),
     logs: await loadTable<SetLog>(db, 'set_logs'),
     achievements: await loadTable<Achievement>(db, 'achievements'),
     bodyProfile: (await loadTable<BodyProfile>(db, 'body_profile'))[0] ?? null,
@@ -166,6 +186,8 @@ export async function savePersistedData(data: PersistedData) {
   const snapshot = {
     exercises: [...data.exercises],
     routines: [...data.routines],
+    diets: [...data.diets],
+    routineCollections: [...data.routineCollections],
     logs: [...data.logs],
     achievements: [...data.achievements],
     bodyProfile: data.bodyProfile ? { ...data.bodyProfile } : null,
@@ -218,6 +240,8 @@ async function writePersistedData(data: PersistedData) {
   await db.withExclusiveTransactionAsync(async (txn) => {
     await replaceTableInTransaction(txn, 'exercises', data.exercises, now);
     await replaceTableInTransaction(txn, 'routines', data.routines, now);
+    await replaceTableInTransaction(txn, 'diets', data.diets, now);
+    await replaceTableInTransaction(txn, 'routine_collections', data.routineCollections, now);
     await replaceTableInTransaction(txn, 'set_logs', data.logs, now);
     await replaceTableInTransaction(txn, 'achievements', data.achievements, now);
     await replaceTableInTransaction(txn, 'body_profile', data.bodyProfile ? [data.bodyProfile] : [], now);
