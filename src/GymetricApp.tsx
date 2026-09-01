@@ -45,6 +45,7 @@ import { BottomNavigation } from './application/BottomNavigation';
 import { AppSettingsProvider, useAppSettings } from './application/AppSettingsContext';
 import { DietScreen } from './features/diets/DietScreen';
 import { ExerciseRow, ExercisesScreen } from './features/exercises/ExercisesScreen';
+import { ExerciseDraft, ExerciseEditorModal } from './features/exercises/ExerciseEditorModal';
 import { ProgressScreen } from './features/progress/ProgressScreen';
 import {
   BodyMeasurementDraft,
@@ -142,17 +143,6 @@ Notifications.setNotificationHandler({
   },
 });
 
-type ExerciseDraft = {
-  id?: string;
-  name: string;
-  muscleGroup: MuscleGroup;
-  equipmentKind: EquipmentKind;
-  equipment: string;
-  grip: GripKind;
-  movementFocus: MovementFocus;
-  notes: string;
-};
-
 type RoutineDraft = {
   id?: string;
   name: string;
@@ -162,10 +152,6 @@ type RoutineDraft = {
   exercises: RoutineExercise[];
 };
 
-const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
-const equipmentOptions: EquipmentKind[] = ['machine', 'free_weight', 'barbell', 'dumbbell', 'cable', 'bodyweight', 'other'];
-const gripOptions: GripKind[] = ['none', 'prone', 'supine', 'neutral', 'mixed'];
-const movementOptions: MovementFocus[] = ['none', 'concentric', 'eccentric', 'tempo'];
 export default function App() {
   const systemScheme = useColorScheme();
   const [preferences, setPreferences] = useState(defaultAppPreferences);
@@ -2369,107 +2355,6 @@ function KindOption({ active, label, onPress }: { active: boolean; label: string
     <Pressable style={[styles.kindOption, active && styles.kindOptionActive]} onPress={onPress}>
       <Text style={[styles.kindOptionText, active && styles.kindOptionTextActive]}>{label}</Text>
     </Pressable>
-  );
-}
-
-function ExerciseEditorModal({
-  close,
-  deleteExercise,
-  draft,
-  save,
-  setDraft,
-}: {
-  close: () => void;
-  deleteExercise: (exerciseId: string) => void;
-  draft: ExerciseDraft | null;
-  save: () => void;
-  setDraft: Dispatch<SetStateAction<ExerciseDraft | null>>;
-}) {
-  if (!draft) {
-    return null;
-  }
-
-  return (
-    <Modal transparent animationType="slide" visible onRequestClose={close}>
-      <View style={styles.modalScrim}>
-        <ScrollView style={styles.editorCard} contentContainerStyle={styles.editorContent}>
-          <Text style={styles.modalTitle}>{draft.id ? 'Editar ejercicio' : 'Nuevo ejercicio'}</Text>
-          <TextInput
-            placeholder="Nombre del ejercicio"
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.name}
-            onChangeText={(name) => setDraft((current) => (current ? { ...current, name } : current))}
-          />
-
-          <Text style={styles.editorLabel}>Grupo muscular</Text>
-          <OptionGrid
-            options={muscleOptions}
-            labels={muscleLabels}
-            value={draft.muscleGroup}
-            onChange={(muscleGroup) => setDraft((current) => (current ? { ...current, muscleGroup } : current))}
-          />
-
-          <Text style={styles.editorLabel}>Equipo</Text>
-          <OptionGrid
-            options={equipmentOptions}
-            labels={equipmentLabels}
-            value={draft.equipmentKind}
-            onChange={(equipmentKind) =>
-              setDraft((current) =>
-                current ? { ...current, equipmentKind, equipment: current.equipment || equipmentLabels[equipmentKind] } : current,
-              )
-            }
-          />
-          <TextInput
-            placeholder="Detalle: máquina, barra, polea..."
-            placeholderTextColor="#7C8797"
-            style={styles.editorInput}
-            value={draft.equipment}
-            onChangeText={(equipment) => setDraft((current) => (current ? { ...current, equipment } : current))}
-          />
-
-          <Text style={styles.editorLabel}>Agarre opcional</Text>
-          <OptionGrid
-            options={gripOptions}
-            labels={gripLabels}
-            value={draft.grip}
-            onChange={(grip) => setDraft((current) => (current ? { ...current, grip } : current))}
-          />
-
-          <Text style={styles.editorLabel}>Foco opcional</Text>
-          <OptionGrid
-            options={movementOptions}
-            labels={movementLabels}
-            value={draft.movementFocus}
-            onChange={(movementFocus) => setDraft((current) => (current ? { ...current, movementFocus } : current))}
-          />
-
-          <TextInput
-            multiline
-            placeholder="Notas opcionales"
-            placeholderTextColor="#7C8797"
-            style={[styles.editorInput, styles.editorTextArea]}
-            value={draft.notes}
-            onChangeText={(notes) => setDraft((current) => (current ? { ...current, notes } : current))}
-          />
-
-          <View style={styles.modalActions}>
-            <Pressable style={styles.modalSecondary} onPress={close}>
-              <Text style={styles.modalSecondaryText}>Cancelar</Text>
-            </Pressable>
-            <Pressable style={styles.modalPrimary} onPress={save}>
-              <Text style={styles.modalPrimaryText}>Guardar</Text>
-            </Pressable>
-          </View>
-          {draft.id && (
-            <Pressable style={styles.fullWidthDanger} onPress={() => deleteExercise(draft.id!)}>
-              <Text style={styles.modalDangerText}>Eliminar ejercicio</Text>
-            </Pressable>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
   );
 }
 
