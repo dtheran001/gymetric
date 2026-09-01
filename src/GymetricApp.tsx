@@ -1,7 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
-import * as IntentLauncher from 'expo-intent-launcher';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as MediaLibrary from 'expo-media-library';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -11,7 +10,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import {
   Dispatch,
-  ReactNode,
   SetStateAction,
   useEffect,
   useMemo,
@@ -29,7 +27,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   ToastAndroid,
@@ -49,6 +46,7 @@ import { AppSettingsProvider, useAppSettings } from './application/AppSettingsCo
 import { DietScreen } from './features/diets/DietScreen';
 import { ExerciseRow, ExercisesScreen } from './features/exercises/ExercisesScreen';
 import { RoutinesScreen } from './features/routines/RoutinesScreen';
+import { SettingsScreen } from './features/settings/SettingsScreen';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
 import { buildDietTransferFile, parseDietTransferFile } from './data/dietTransfer';
 import {
@@ -1917,275 +1915,6 @@ function GymetricApp() {
         saveToGallery={saveProgressPhotoToGallery}
       />
     </KeyboardAvoidingView>
-  );
-}
-
-function SettingsScreen({
-  close,
-  exportData,
-  importData,
-}: {
-  close: () => void;
-  exportData: () => void;
-  importData: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const { colors, preferences, updatePreferences } = useAppSettings();
-
-  async function openExactAlarmSettings() {
-    try {
-      await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.REQUEST_SCHEDULE_EXACT_ALARM, {
-        data: 'package:com.danyk.gymetric',
-      });
-    } catch {
-      Alert.alert(
-        'No se pudieron abrir los ajustes',
-        'Busca Gymetric en Ajustes > Aplicaciones > Acceso especial > Alarmas y recordatorios.',
-      );
-    }
-  }
-
-  return (
-    <View style={styles.settingsScreen}>
-      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} />
-      <View style={[styles.settingsHeader, { paddingTop: Math.max(insets.top + 8, 18) }]}>
-        <Pressable accessibilityLabel="Volver" hitSlop={10} onPress={close} style={styles.settingsBack}>
-          <MaterialIcons color={colors.text} name="arrow-back" size={26} />
-        </Pressable>
-        <Text style={styles.settingsTitle}>Ajustes</Text>
-        <View style={styles.settingsBack} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={[styles.settingsContent, { paddingBottom: Math.max(insets.bottom, 18) + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <SettingsSection icon="palette" title="Apariencia">
-          <Text style={styles.settingDescription}>
-            Elige el aspecto de Gymetric. Con “Sistema”, la app seguirá el modo de tu móvil.
-          </Text>
-          <View style={styles.themeChoices}>
-            <ThemeChoice
-              active={preferences.theme === 'system'}
-              icon="brightness-auto"
-              label="Sistema"
-              onPress={() => updatePreferences({ theme: 'system' })}
-            />
-            <ThemeChoice
-              active={preferences.theme === 'light'}
-              icon="light-mode"
-              label="Claro"
-              onPress={() => updatePreferences({ theme: 'light' })}
-            />
-            <ThemeChoice
-              active={preferences.theme === 'dark'}
-              icon="dark-mode"
-              label="Oscuro"
-              onPress={() => updatePreferences({ theme: 'dark' })}
-            />
-          </View>
-        </SettingsSection>
-
-        <SettingsSection icon="straighten" title="Unidades">
-          <UnitSetting
-            label="Peso"
-            options={[
-              { label: 'kg', value: 'kg' },
-              { label: 'lb', value: 'lb' },
-            ]}
-            selected={preferences.weightUnit}
-            onSelect={(weightUnit) => updatePreferences({ weightUnit: weightUnit as AppPreferences['weightUnit'] })}
-          />
-          <UnitSetting
-            label="Distancia"
-            options={[
-              { label: 'km', value: 'km' },
-              { label: 'mi', value: 'mi' },
-            ]}
-            selected={preferences.distanceUnit}
-            onSelect={(distanceUnit) =>
-              updatePreferences({ distanceUnit: distanceUnit as AppPreferences['distanceUnit'] })
-            }
-          />
-          <UnitSetting
-            label="Medidas corporales"
-            options={[
-              { label: 'cm', value: 'cm' },
-              { label: 'in', value: 'in' },
-            ]}
-            selected={preferences.bodyUnit}
-            onSelect={(bodyUnit) => updatePreferences({ bodyUnit: bodyUnit as AppPreferences['bodyUnit'] })}
-          />
-        </SettingsSection>
-
-        <SettingsSection icon="notifications" title="Notificaciones">
-          <SwitchSetting
-            description="Avisa cuando termina el descanso, incluso con la app en segundo plano."
-            label="Temporizador de descanso"
-            value={preferences.restNotificationsEnabled}
-            onValueChange={(restNotificationsEnabled) => updatePreferences({ restNotificationsEnabled })}
-          />
-          <SwitchSetting
-            description="Añade vibración al aviso de fin de descanso."
-            label="Vibración"
-            value={preferences.restVibrationEnabled}
-            onValueChange={(restVibrationEnabled) => updatePreferences({ restVibrationEnabled })}
-          />
-          {Platform.OS === 'android' && (
-            <Pressable onPress={openExactAlarmSettings} style={styles.settingAction}>
-              <MaterialIcons color={colors.primary} name="alarm-on" size={23} />
-              <View style={styles.settingText}>
-                <Text style={styles.settingLabel}>Permitir alarmas precisas</Text>
-                <Text style={styles.settingDescription}>
-                  Evita que Android retrase el aviso cuando termina el descanso.
-                </Text>
-              </View>
-              <MaterialIcons color={colors.textSubtle} name="open-in-new" size={21} />
-            </Pressable>
-          )}
-          <View style={styles.settingRow}>
-            <View style={styles.settingText}>
-              <Text style={styles.settingLabel}>Tono</Text>
-              <Text style={styles.settingDescription}>Predeterminado · más tonos próximamente</Text>
-            </View>
-            <MaterialIcons color={colors.textSubtle} name="chevron-right" size={24} />
-          </View>
-        </SettingsSection>
-
-        <SettingsSection icon="fitness-center" title="Entrenamiento">
-          <SwitchSetting
-            description="Evita que la pantalla se apague mientras entrenas."
-            label="Mantener pantalla activa"
-            value={preferences.keepScreenAwake}
-            onValueChange={(keepScreenAwake) => updatePreferences({ keepScreenAwake })}
-          />
-        </SettingsSection>
-
-        <SettingsSection icon="save-alt" title="Tus datos">
-          <Pressable onPress={exportData} style={styles.settingAction}>
-            <MaterialIcons color={colors.primary} name="ios-share" size={23} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingLabel}>Exportar copia</Text>
-              <Text style={styles.settingDescription}>Guarda rutinas, registros, medidas y preferencias.</Text>
-            </View>
-          </Pressable>
-          <Pressable onPress={importData} style={styles.settingAction}>
-            <MaterialIcons color={colors.primary} name="file-download" size={23} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingLabel}>Importar copia</Text>
-              <Text style={styles.settingDescription}>Las fotos permanecen guardadas solo en este móvil.</Text>
-            </View>
-          </Pressable>
-        </SettingsSection>
-
-        <View style={styles.settingsFooter}>
-          <Text style={styles.kicker}>Gymetric</Text>
-          <Text style={styles.settingDescription}>Versión 1.0.0 · Datos locales y bajo tu control</Text>
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-function SettingsSection({
-  children,
-  icon,
-  title,
-}: {
-  children: ReactNode;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-}) {
-  const { colors } = useAppSettings();
-  return (
-    <View style={styles.settingsSection}>
-      <View style={styles.settingsSectionHeader}>
-        <View style={styles.settingsSectionIcon}>
-          <MaterialIcons color={colors.primary} name={icon} size={21} />
-        </View>
-        <Text style={styles.settingsSectionTitle}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function ThemeChoice({
-  active,
-  icon,
-  label,
-  onPress,
-}: {
-  active: boolean;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  const { colors } = useAppSettings();
-  return (
-    <Pressable onPress={onPress} style={[styles.themeChoice, active && styles.themeChoiceActive]}>
-      <MaterialIcons color={active ? colors.onPrimary : colors.textMuted} name={icon} size={22} />
-      <Text style={[styles.themeChoiceText, active && styles.themeChoiceTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function UnitSetting({
-  label,
-  onSelect,
-  options,
-  selected,
-}: {
-  label: string;
-  onSelect: (value: string) => void;
-  options: { label: string; value: string }[];
-  selected: string;
-}) {
-  return (
-    <View style={styles.unitSetting}>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <View style={styles.unitOptions}>
-        {options.map((option) => (
-          <Pressable
-            key={option.value}
-            onPress={() => onSelect(option.value)}
-            style={[styles.unitOption, selected === option.value && styles.unitOptionActive]}
-          >
-            <Text style={[styles.unitOptionText, selected === option.value && styles.unitOptionTextActive]}>
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function SwitchSetting({
-  description,
-  label,
-  onValueChange,
-  value,
-}: {
-  description: string;
-  label: string;
-  onValueChange: (value: boolean) => void;
-  value: boolean;
-}) {
-  const { colors } = useAppSettings();
-  return (
-    <View style={styles.settingRow}>
-      <View style={styles.settingText}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        <Text style={styles.settingDescription}>{description}</Text>
-      </View>
-      <Switch
-        onValueChange={onValueChange}
-        thumbColor={colors.scheme === 'dark' ? colors.text : '#FFFFFF'}
-        trackColor={{ false: colors.borderStrong, true: colors.primary }}
-        value={value}
-      />
-    </View>
   );
 }
 
