@@ -10,11 +10,9 @@ import * as Sharing from 'expo-sharing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import {
-  createContext,
   Dispatch,
   ReactNode,
   SetStateAction,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -46,6 +44,11 @@ import DraggableFlatList, {
 } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomNavigation } from './application/BottomNavigation';
+import { AppSettingsProvider, useAppSettings } from './application/AppSettingsContext';
+import { DietScreen } from './features/diets/DietScreen';
+import { ExerciseRow, ExercisesScreen } from './features/exercises/ExercisesScreen';
+import { RoutinesScreen } from './features/routines/RoutinesScreen';
 import { seedAchievements, seedExercises, seedLogs, seedRoutines } from './data/seed';
 import { buildDietTransferFile, parseDietTransferFile } from './data/dietTransfer';
 import {
@@ -73,6 +76,7 @@ import {
   getWaterSummary,
 } from './domain/bodyProgress';
 import { buildAchievement, formatRestTime, getPersonalBest } from './domain/progress';
+import { bodyLengthToCm, displayBodyLength, displayWeight, formatDecimal, weightToKg } from './domain/units';
 import {
   AppPreferences,
   defaultAppPreferences,
@@ -178,46 +182,6 @@ const muscleOptions: MuscleGroup[] = ['chest', 'back', 'legs', 'shoulders', 'arm
 const equipmentOptions: EquipmentKind[] = ['machine', 'free_weight', 'barbell', 'dumbbell', 'cable', 'bodyweight', 'other'];
 const gripOptions: GripKind[] = ['none', 'prone', 'supine', 'neutral', 'mixed'];
 const movementOptions: MovementFocus[] = ['none', 'concentric', 'eccentric', 'tempo'];
-const KG_TO_LB = 2.2046226218;
-const CM_TO_IN = 0.3937007874;
-
-function displayWeight(valueKg: number, unit: AppPreferences['weightUnit']) {
-  return unit === 'lb' ? valueKg * KG_TO_LB : valueKg;
-}
-
-function weightToKg(value: number, unit: AppPreferences['weightUnit']) {
-  return unit === 'lb' ? value / KG_TO_LB : value;
-}
-
-function displayBodyLength(valueCm: number, unit: AppPreferences['bodyUnit']) {
-  return unit === 'in' ? valueCm * CM_TO_IN : valueCm;
-}
-
-function bodyLengthToCm(value: number, unit: AppPreferences['bodyUnit']) {
-  return unit === 'in' ? value / CM_TO_IN : value;
-}
-
-function formatDecimal(value: number, digits = 1) {
-  return Number(value.toFixed(digits)).toString();
-}
-
-type AppSettingsContextValue = {
-  colors: ThemeColors;
-  preferences: AppPreferences;
-  preferencesReady: boolean;
-  updatePreferences: (changes: Partial<AppPreferences>) => void;
-};
-
-const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
-
-function useAppSettings() {
-  const value = useContext(AppSettingsContext);
-  if (!value) {
-    throw new Error('useAppSettings debe usarse dentro de AppSettingsContext.');
-  }
-  return value;
-}
-
 export default function App() {
   const systemScheme = useColorScheme();
   const [preferences, setPreferences] = useState(defaultAppPreferences);
@@ -268,7 +232,7 @@ export default function App() {
   }
 
   return (
-    <AppSettingsContext.Provider value={{ colors, preferences, preferencesReady, updatePreferences }}>
+    <AppSettingsProvider value={{ colors, preferences, preferencesReady, updatePreferences }}>
       <ThemeColorsContext.Provider value={colors}>
         <GestureHandlerRootView style={styles.gestureRoot}>
           <SafeAreaProvider>
@@ -276,7 +240,7 @@ export default function App() {
           </SafeAreaProvider>
         </GestureHandlerRootView>
       </ThemeColorsContext.Provider>
-    </AppSettingsContext.Provider>
+    </AppSettingsProvider>
   );
 }
 
@@ -1854,13 +1818,7 @@ function GymetricApp() {
         )}
       </ScrollView>
 
-      <View style={[styles.tabs, { bottom: Math.max(insets.bottom, 10) }]}>
-        <TabButton active={tab === 'today'} label="Hoy" onPress={() => setTab('today')} />
-        <TabButton active={tab === 'routines'} label="Rutinas" onPress={() => setTab('routines')} />
-        <TabButton active={tab === 'diet'} label="Dieta" onPress={() => setTab('diet')} />
-        <TabButton active={tab === 'exercises'} label="Ejercicios" onPress={() => setTab('exercises')} />
-        <TabButton active={tab === 'progress'} label="Progreso" onPress={() => setTab('progress')} />
-      </View>
+      <BottomNavigation bottom={Math.max(insets.bottom, 10)} value={tab} onChange={setTab} />
 
       {activeWorkout?.view === 'overview' && activeWorkout.isResting && (
         <View style={[styles.pinnedTimer, { bottom: Math.max(insets.bottom, 10) + 74 }]}>
@@ -2696,394 +2654,6 @@ function KindOption({ active, label, onPress }: { active: boolean; label: string
     <Pressable style={[styles.kindOption, active && styles.kindOptionActive]} onPress={onPress}>
       <Text style={[styles.kindOptionText, active && styles.kindOptionTextActive]}>{label}</Text>
     </Pressable>
-  );
-}
-
-function DietScreen({
-  diets,
-  exportDiets,
-  importDiets,
-  setCurrentDiet,
-}: {
-  diets: Diet[];
-  exportDiets: () => void;
-  importDiets: () => void;
-  setCurrentDiet: (dietId: string) => void;
-}) {
-  const currentDiet = diets.find((diet) => diet.isCurrent);
-  const historicalDiets = diets.filter((diet) => !diet.isCurrent);
-
-  return (
-    <View style={styles.stack}>
-      <View style={styles.actionRow}>
-        <Pressable style={styles.actionButton} onPress={importDiets}>
-          <Text style={styles.secondaryButtonText}>Importar</Text>
-        </Pressable>
-        <Pressable style={styles.actionButton} onPress={exportDiets}>
-          <Text style={styles.secondaryButtonText}>Exportar</Text>
-        </Pressable>
-      </View>
-
-      {currentDiet ? (
-        <DietDetails diet={currentDiet} />
-      ) : (
-        <View style={styles.hero}>
-          <Text style={styles.sectionLabel}>Dieta actual</Text>
-          <Text style={styles.h1}>Sin dieta activa</Text>
-          <Text style={styles.heroCopy}>Importa una dieta y selecciónala desde el histórico.</Text>
-        </View>
-      )}
-
-      <Text style={styles.sectionLabel}>Histórico</Text>
-      {historicalDiets.map((diet) => (
-        <View key={diet.id} style={styles.panel}>
-          <Text style={styles.panelTitle}>{diet.name}</Text>
-          {!!diet.objective && <Text style={styles.muted}>{diet.objective}</Text>}
-          <Text style={styles.routineLine}>{diet.days.length} días o variantes</Text>
-          <Pressable style={styles.secondaryButton} onPress={() => setCurrentDiet(diet.id)}>
-            <Text style={styles.secondaryButtonText}>Establecer como actual</Text>
-          </Pressable>
-        </View>
-      ))}
-      {!historicalDiets.length && <Text style={styles.emptyText}>Todavía no hay dietas en el histórico.</Text>}
-    </View>
-  );
-}
-
-function DietDetails({ diet }: { diet: Diet }) {
-  return (
-    <View style={styles.stack}>
-      <View style={styles.hero}>
-        <Text style={styles.sectionLabel}>Dieta actual</Text>
-        <Text style={styles.h1}>{diet.name}</Text>
-        {!!diet.objective && <Text style={styles.heroCopy}>{diet.objective}</Text>}
-        {!!diet.startDate && (
-          <Text style={styles.muted}>{diet.startDate}{diet.endDate ? ` — ${diet.endDate}` : ''}</Text>
-        )}
-        {!!diet.notes && <Text style={styles.routineNote}>{diet.notes}</Text>}
-      </View>
-      {diet.days.map((day) => (
-        <View key={day.id} style={styles.panel}>
-          <Text style={styles.panelTitle}>{day.name}</Text>
-          {day.meals.map((meal) => (
-            <View key={meal.id} style={styles.dietMeal}>
-              <Text style={styles.editorLabel}>{meal.name}</Text>
-              {(meal.items ?? []).map((item) => (
-                <Text key={item.id} style={styles.routineLine}>
-                  • {item.name}{item.quantity ? ` · ${item.quantity}` : ''}{item.notes ? ` — ${item.notes}` : ''}
-                </Text>
-              ))}
-              {(meal.entries ?? []).map((entry) =>
-                entry.type === 'item' ? (
-                  <Text key={entry.id} style={styles.routineLine}>
-                    • {entry.item.name}{entry.item.quantity ? ` · ${entry.item.quantity}` : ''}{entry.item.notes ? ` — ${entry.item.notes}` : ''}
-                  </Text>
-                ) : (
-                  <View key={entry.id} style={styles.dietChoice}>
-                    <Text style={styles.dietChoiceLabel}>{entry.label ?? 'Elige una opción'}</Text>
-                    {entry.options.map((option, optionIndex) => (
-                      <Text key={option.id} style={styles.routineLine}>
-                        {optionIndex + 1}. {option.items.map((item) => `${item.quantity ? `${item.quantity} ` : ''}${item.name}`).join(' + ')}{option.notes ? ` — ${option.notes}` : ''}
-                      </Text>
-                    ))}
-                  </View>
-                ),
-              )}
-              {!!meal.notes && <Text style={styles.muted}>{meal.notes}</Text>}
-            </View>
-          ))}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function RoutinesScreen({
-  assignRoutineToCollection,
-  collections,
-  createCollection,
-  deleteCollection,
-  exercises,
-  exportRoutines,
-  importRoutines,
-  openRoutineEditor,
-  routines,
-  startRoutine,
-  toggleRoutineArchived,
-  toggleCollectionArchived,
-}: {
-  assignRoutineToCollection: (routineId: string, collectionName?: string) => void;
-  collections: RoutineCollection[];
-  createCollection: (name: string) => boolean;
-  deleteCollection: (collectionId: string) => void;
-  exercises: Exercise[];
-  exportRoutines: () => void;
-  importRoutines: () => void;
-  openRoutineEditor: (routine?: Routine) => void;
-  routines: Routine[];
-  startRoutine: (routine?: Routine) => void;
-  toggleRoutineArchived: (routineId: string) => void;
-  toggleCollectionArchived: (collectionId: string) => void;
-}) {
-  const { colors } = useAppSettings();
-  const [showArchived, setShowArchived] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<'all' | 'none' | string>('all');
-  const [showCollectionCreator, setShowCollectionCreator] = useState(false);
-  const [collectionName, setCollectionName] = useState('');
-  const [collectionPickerRoutine, setCollectionPickerRoutine] = useState<Routine | null>(null);
-  const visibleCollections = collections.filter((collection) => Boolean(collection.archivedAt) === showArchived);
-  const visibleRoutines = routines.filter(
-    (routine) => Boolean(routine.archivedAt) === showArchived &&
-      (selectedCollection === 'all' || (selectedCollection === 'none' ? !routine.collection : routine.collection === selectedCollection)),
-  );
-  const groupedRoutines = visibleRoutines.reduce<Record<string, Routine[]>>((groups, routine) => {
-    const collection = routine.collection?.trim() || 'Sin colección';
-    groups[collection] = [...(groups[collection] ?? []), routine];
-    return groups;
-  }, {});
-
-  function requestDeleteCollection(collection: RoutineCollection) {
-    const routineCount = routines.filter((routine) => routine.collection === collection.name).length;
-    Alert.alert(
-      'Eliminar colección',
-      routineCount
-        ? `La colección se eliminará y sus ${routineCount} rutinas pasarán a Sin colección. No se borrará ningún entrenamiento.`
-        : 'La colección se eliminará. No contiene rutinas.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: () => { deleteCollection(collection.id); setSelectedCollection('all'); } },
-      ],
-    );
-  }
-
-  return (
-    <View style={styles.stack}>
-      <Pressable style={styles.primaryButton} onPress={() => openRoutineEditor()}>
-        <Text style={styles.primaryButtonText}>Crear rutina</Text>
-      </Pressable>
-      <View style={styles.actionRow}>
-        <Pressable style={styles.actionButton} onPress={() => setShowCollectionCreator((current) => !current)}>
-          <Text style={styles.secondaryButtonText}>Crear colección</Text>
-        </Pressable>
-        <Pressable style={styles.actionButton} onPress={importRoutines}>
-          <Text style={styles.secondaryButtonText}>Importar</Text>
-        </Pressable>
-        <Pressable style={styles.actionButton} onPress={exportRoutines}>
-          <Text style={styles.secondaryButtonText}>Exportar</Text>
-        </Pressable>
-      </View>
-      {showCollectionCreator && (
-        <View style={styles.panel}>
-          <Text style={styles.sectionLabel}>Nueva colección</Text>
-          <TextInput placeholder="Nombre de la colección" placeholderTextColor="#7C8797" style={styles.editorInput} value={collectionName} onChangeText={setCollectionName} />
-          <Pressable style={styles.secondaryButton} onPress={() => {
-            if (createCollection(collectionName)) {
-              setCollectionName('');
-              setShowCollectionCreator(false);
-            } else {
-              Alert.alert('Colección no válida', 'Escribe un nombre nuevo para la colección.');
-            }
-          }}>
-            <Text style={styles.secondaryButtonText}>Guardar colección</Text>
-          </Pressable>
-        </View>
-      )}
-      <View style={styles.segmented}>
-        <SegmentButton active={!showArchived} label="Activas" onPress={() => { setShowArchived(false); setSelectedCollection('all'); }} />
-        <SegmentButton active={showArchived} label="Archivadas" onPress={() => { setShowArchived(true); setSelectedCollection('all'); }} />
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        <KindOption active={selectedCollection === 'all'} label="Todas" onPress={() => setSelectedCollection('all')} />
-        <KindOption active={selectedCollection === 'none'} label="Sin colección" onPress={() => setSelectedCollection('none')} />
-        {visibleCollections.map((collection) => (
-          <KindOption key={collection.id} active={selectedCollection === collection.name} label={collection.name} onPress={() => setSelectedCollection(collection.name)} />
-        ))}
-      </ScrollView>
-      {visibleCollections
-        .filter((collection) => !routines.some((routine) => routine.collection === collection.name && Boolean(routine.archivedAt) === showArchived))
-        .filter((collection) => selectedCollection === 'all' || selectedCollection === collection.name)
-        .map((collection) => (
-          <View key={collection.id} style={styles.panel}>
-            <Text style={styles.panelTitle}>{collection.name}</Text>
-            <Text style={styles.muted}>Esta colección todavía no contiene rutinas.</Text>
-            <Pressable style={styles.secondaryButton} onPress={() => { toggleCollectionArchived(collection.id); setSelectedCollection('all'); }}>
-              <Text style={styles.secondaryButtonText}>{showArchived ? 'Restaurar colección' : 'Archivar colección'}</Text>
-            </Pressable>
-            <Pressable style={styles.fullWidthDanger} onPress={() => requestDeleteCollection(collection)}>
-              <Text style={styles.modalDangerText}>Eliminar colección</Text>
-            </Pressable>
-          </View>
-        ))}
-      {Object.entries(groupedRoutines).map(([collection, collectionRoutines]) => (
-        <View key={collection} style={styles.stack}>
-          <View style={styles.collectionHeader}>
-            <Text style={styles.sectionLabel}>{collection}</Text>
-            {collections.find((item) => item.name === collection) && (
-              <View style={styles.collectionHeaderActions}>
-                <Pressable onPress={() => { toggleCollectionArchived(collections.find((item) => item.name === collection)!.id); setSelectedCollection('all'); }}>
-                  <Text style={styles.collectionAction}>{showArchived ? 'Restaurar' : 'Archivar'}</Text>
-                </Pressable>
-                <Pressable onPress={() => requestDeleteCollection(collections.find((item) => item.name === collection)!)}>
-                  <Text style={styles.collectionDeleteAction}>Eliminar</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-          {collectionRoutines.map((routine) => (
-        <View key={routine.id} style={styles.panel}>
-          <View style={styles.routineCardHeader}>
-            <Text style={styles.sectionLabel}>
-              {routine.preferredDays?.length ? routine.preferredDays.map((day) => weekdayLabels[day]).join(', ') : 'Sin día sugerido'}
-            </Text>
-            <Pressable
-              accessibilityLabel={`Cambiar colección de ${routine.name}`}
-              accessibilityRole="button"
-              hitSlop={8}
-              style={styles.collectionPickerButton}
-              onPress={() => setCollectionPickerRoutine(routine)}
-            >
-              <MaterialIcons color={colors.primary} name="drive-file-move" size={22} />
-            </Pressable>
-          </View>
-          <Text style={styles.panelTitle}>{routine.name}</Text>
-          <Text style={styles.muted}>{routine.focus}</Text>
-          <View style={styles.exerciseList}>
-            {routine.exercises.map((routineExercise) => {
-              const exercise = exercises.find((item) => item.id === routineExercise.exerciseId);
-              return (
-                <Text key={routineExercise.id} style={styles.routineLine}>
-                  {exercise?.name ?? 'Ejercicio'} · {routineExercise.sets.length} series ·{' '}
-                  {formatRestTime(routineExercise.restSeconds)} descanso
-                </Text>
-              );
-            })}
-          </View>
-          <View style={styles.actionRow}>
-            <Pressable style={styles.actionButton} onPress={() => toggleRoutineArchived(routine.id)}>
-              <Text style={styles.secondaryButtonText}>{routine.archivedAt ? 'Restaurar' : 'Archivar'}</Text>
-            </Pressable>
-            <Pressable style={styles.actionButton} onPress={() => openRoutineEditor(routine)}>
-              <Text style={styles.secondaryButtonText}>Editar</Text>
-            </Pressable>
-            {!routine.archivedAt && (
-              <Pressable style={styles.actionButtonPrimary} onPress={() => startRoutine(routine)}>
-                <Text style={styles.primaryButtonText}>Iniciar</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-          ))}
-        </View>
-      ))}
-      {!visibleRoutines.length && (
-        <Text style={styles.emptyText}>{showArchived ? 'No hay rutinas archivadas.' : 'No hay rutinas activas.'}</Text>
-      )}
-      <Modal transparent animationType="fade" visible={Boolean(collectionPickerRoutine)} onRequestClose={() => setCollectionPickerRoutine(null)}>
-        <View style={styles.modalScrim}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Mover rutina</Text>
-            <Text style={styles.modalCopy}>{collectionPickerRoutine?.name}</Text>
-            <ScrollView
-              style={styles.collectionPickerList}
-              contentContainerStyle={styles.collectionPickerListContent}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-            >
-              <KindOption active={!collectionPickerRoutine?.collection} label="Sin colección" onPress={() => {
-                if (collectionPickerRoutine) assignRoutineToCollection(collectionPickerRoutine.id);
-                setCollectionPickerRoutine(null);
-              }} />
-              {collections.filter((collection) => !collection.archivedAt).map((collection) => (
-                <KindOption key={collection.id} active={collectionPickerRoutine?.collection === collection.name} label={collection.name} onPress={() => {
-                  if (collectionPickerRoutine) assignRoutineToCollection(collectionPickerRoutine.id, collection.name);
-                  setCollectionPickerRoutine(null);
-                }} />
-              ))}
-            </ScrollView>
-            <Pressable style={styles.collectionPickerCancel} onPress={() => setCollectionPickerRoutine(null)}>
-              <Text style={styles.modalSecondaryText}>Cancelar</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-}
-
-function ExercisesScreen({
-  exercises,
-  openExerciseEditor,
-  toggleExerciseArchived,
-}: {
-  exercises: Exercise[];
-  openExerciseEditor: (exercise?: Exercise) => void;
-  toggleExerciseArchived: (exerciseId: string) => void;
-}) {
-  const { colors } = useAppSettings();
-  const [query, setQuery] = useState('');
-  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | 'all'>('all');
-  const [showArchived, setShowArchived] = useState(false);
-  const normalizedQuery = query.trim().toLocaleLowerCase('es');
-  const visibleExercises = exercises.filter(
-    (exercise) =>
-      Boolean(exercise.archivedAt) === showArchived &&
-      (muscleFilter === 'all' || exercise.muscleGroup === muscleFilter) &&
-      (!normalizedQuery || exercise.name.toLocaleLowerCase('es').includes(normalizedQuery)),
-  );
-
-  return (
-    <View style={styles.stack}>
-      <Pressable style={styles.primaryButton} onPress={() => openExerciseEditor()}>
-        <Text style={styles.primaryButtonText}>Añadir ejercicio</Text>
-      </Pressable>
-
-      <TextInput
-        placeholder="Buscar ejercicio"
-        placeholderTextColor="#7C8797"
-        style={styles.editorInput}
-        value={query}
-        onChangeText={setQuery}
-      />
-      <View style={styles.segmented}>
-        <SegmentButton active={!showArchived} label="Activos" onPress={() => setShowArchived(false)} />
-        <SegmentButton active={showArchived} label="Archivados" onPress={() => setShowArchived(true)} />
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        <KindOption active={muscleFilter === 'all'} label="Todos" onPress={() => setMuscleFilter('all')} />
-        {muscleOptions.map((muscle) => (
-          <KindOption
-            key={muscle}
-            active={muscleFilter === muscle}
-            label={muscleLabels[muscle]}
-            onPress={() => setMuscleFilter(muscle)}
-          />
-        ))}
-      </ScrollView>
-
-      <View style={styles.panel}>
-        <Text style={styles.sectionLabel}>Biblioteca</Text>
-        {visibleExercises.map((exercise) => (
-          <View key={exercise.id} style={styles.exerciseLibraryRow}>
-            <Pressable style={styles.headerTitle} onPress={() => openExerciseEditor(exercise)}>
-              <ExerciseRow exercise={exercise} />
-            </Pressable>
-            <Pressable
-              accessibilityLabel={exercise.archivedAt ? `Restaurar ${exercise.name}` : `Archivar ${exercise.name}`}
-              accessibilityRole="button"
-              style={styles.smallSquareButton}
-              onPress={() => toggleExerciseArchived(exercise.id)}
-            >
-              <MaterialIcons
-                color={colors.text}
-                name={exercise.archivedAt ? 'unarchive' : 'archive'}
-                size={20}
-              />
-            </Pressable>
-          </View>
-        ))}
-        {!visibleExercises.length && <Text style={styles.emptyText}>No hay ejercicios con estos filtros.</Text>}
-      </View>
-    </View>
   );
 }
 
@@ -4214,24 +3784,6 @@ function ActualInput({
   );
 }
 
-function ExerciseRow({ exercise }: { exercise: Exercise }) {
-  const equipmentKindLabel = equipmentLabels[exercise.equipmentKind];
-  const equipmentDetail = exercise.equipment && exercise.equipment !== equipmentKindLabel ? ` · ${exercise.equipment}` : '';
-
-  return (
-    <View style={styles.exerciseRow}>
-      <View style={styles.headerTitle}>
-        <Text style={styles.exerciseRowName}>{exercise.name}</Text>
-        <Text style={styles.muted}>
-          {muscleLabels[exercise.muscleGroup]} · {equipmentKindLabel}
-          {equipmentDetail}
-        </Text>
-      </View>
-      <Text style={styles.badge}>{exercise.isCustom ? 'Custom' : 'Base'}</Text>
-    </View>
-  );
-}
-
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metric}>
@@ -4247,14 +3799,6 @@ function SegmentButton({ active, label, onPress }: { active: boolean; label: str
   return (
     <Pressable style={[styles.segmentButton, active && styles.activeSegment]} onPress={onPress}>
       <Text style={[styles.segmentText, active && styles.activeSegmentText]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function TabButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.tabButton, active && styles.activeTab]} onPress={onPress}>
-      <Text style={[styles.tabText, active && styles.activeTabText]}>{label}</Text>
     </Pressable>
   );
 }

@@ -9,6 +9,15 @@ App personal para planificar rutinas de gimnasio, ejecutar sesiones guiadas y se
 - React 19.1
 - TypeScript
 
+## Organización del código
+
+- `src/application`: proveedores globales y navegación principal.
+- `src/features`: pantallas agrupadas por funcionalidad.
+- `src/domain`: modelos, unidades y reglas puras de negocio.
+- `src/data`: persistencia SQLite y formatos de intercambio.
+- `src/ui`: tema y controles reutilizables.
+- `src/workout`: utilidades y estado de las sesiones.
+
 ## Estado actual
 
 - Dashboard inicial.
