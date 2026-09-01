@@ -25,19 +25,25 @@ export type Exercise = {
   grip?: GripKind;
   movementFocus?: MovementFocus;
   notes?: string;
+  archivedAt?: string;
   isCustom: boolean;
 };
 
 export type RoutineSet = {
   id: string;
   kind: SetKind;
-  targetReps: number;
-  targetWeightKg: number;
+  targetReps: number | null;
+  targetWeightKg: number | null;
+  toFailure?: boolean;
 };
+
+export type RoutineSequenceStep = { routineExerciseId: string; setId: string };
+export type RoutineCollection = { id: string; name: string; createdAt: string; archivedAt?: string };
 
 export type RoutineExercise = {
   id: string;
   exerciseId: string;
+  notes?: string;
   restSeconds: number;
   sets: RoutineSet[];
 };
@@ -48,7 +54,31 @@ export type Routine = {
   focus: string;
   estimatedMinutes: number;
   preferredDays?: Weekday[];
+  collection?: string;
+  archivedAt?: string;
+  notes?: string;
+  conditioning?: string;
+  executionSequence?: RoutineSequenceStep[];
   exercises: RoutineExercise[];
+};
+
+export type DietItem = { id: string; name: string; quantity?: string; notes?: string };
+export type DietOption = { id: string; items: DietItem[]; notes?: string };
+export type DietMealEntry =
+  | { id: string; type: 'item'; item: DietItem }
+  | { id: string; type: 'choice'; label?: string; options: DietOption[] };
+export type DietMeal = { id: string; name: string; notes?: string; items?: DietItem[]; entries?: DietMealEntry[] };
+export type DietDay = { id: string; name: string; meals: DietMeal[] };
+export type Diet = {
+  id: string;
+  name: string;
+  objective?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  isCurrent: boolean;
+  createdAt: string;
+  days: DietDay[];
 };
 
 export type SetLog = {

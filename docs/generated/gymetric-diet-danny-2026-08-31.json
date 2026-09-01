@@ -1,0 +1,541 @@
+{
+  "format": "gymetric-diets",
+  "schemaVersion": 1,
+  "exportedAt": "2026-09-01T13:34:35.438Z",
+  "diets": [
+    {
+      "id": "diet-danny-2026-08-31",
+      "name": "Plan nutricional · 31-08-26",
+      "objective": "Plan nutricional de Danny Theran",
+      "startDate": "2026-08-31",
+      "notes": "Todos los pesos son en crudo. Comer aproximadamente cada 3 horas. Cocinar al horno, a la plancha u otros métodos sin fritura. Café e infusiones permitidos; preferiblemente con leche vegetal, desnatada o sin lactosa. Sal al gusto, preferiblemente yodada o rosa del Himalaya. Agua libre: al menos 2–3 litros al día.",
+      "isCurrent": false,
+      "createdAt": "2026-09-01T13:34:35.438Z",
+      "days": [
+        {
+          "id": "standard-day",
+          "name": "Plan diario",
+          "meals": [
+            {
+              "id": "fasting",
+              "name": "En ayunas",
+              "entries": [
+                {
+                  "id": "selenium",
+                  "type": "item",
+                  "item": {
+                    "id": "selenium-item",
+                    "name": "Selenio",
+                    "quantity": "200 mcg"
+                  }
+                },
+                {
+                  "id": "tiroxin",
+                  "type": "item",
+                  "item": {
+                    "id": "tiroxin-item",
+                    "name": "Tiroxin",
+                    "quantity": "2000 mg"
+                  }
+                },
+                {
+                  "id": "synephrine",
+                  "type": "item",
+                  "item": {
+                    "id": "synephrine-item",
+                    "name": "P-sinefrina",
+                    "quantity": "60 mg"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "meal1",
+              "name": "Comida 1",
+              "entries": [
+                {
+                  "id": "eggs",
+                  "type": "item",
+                  "item": {
+                    "id": "eggs-item",
+                    "name": "Huevos enteros",
+                    "quantity": "2 unidades"
+                  }
+                },
+                {
+                  "id": "whites1",
+                  "type": "item",
+                  "item": {
+                    "id": "whites1-item",
+                    "name": "Claras",
+                    "quantity": "5 unidades"
+                  }
+                },
+                {
+                  "id": "carb1",
+                  "type": "choice",
+                  "label": "Elegir una fuente de hidratos",
+                  "options": [
+                    {
+                      "id": "carb1-o1",
+                      "items": [
+                        {
+                          "id": "carb1-o1-i",
+                          "name": "Avena",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb1-o2",
+                      "items": [
+                        {
+                          "id": "carb1-o2-i",
+                          "name": "Crema de arroz",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb1-o3",
+                      "items": [
+                        {
+                          "id": "carb1-o3-i",
+                          "name": "Copos de maíz",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb1-o4",
+                      "items": [
+                        {
+                          "id": "carb1-o4-i",
+                          "name": "Espelta",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "multi",
+                  "type": "item",
+                  "item": {
+                    "id": "multi-item",
+                    "name": "Multivitamínico",
+                    "quantity": "1 unidad"
+                  }
+                },
+                {
+                  "id": "omega1",
+                  "type": "item",
+                  "item": {
+                    "id": "omega1-item",
+                    "name": "Omega 3",
+                    "quantity": "1 g"
+                  }
+                },
+                {
+                  "id": "vitc",
+                  "type": "item",
+                  "item": {
+                    "id": "vitc-item",
+                    "name": "Vitamina C",
+                    "quantity": "1 unidad"
+                  }
+                },
+                {
+                  "id": "berberine1",
+                  "type": "item",
+                  "item": {
+                    "id": "berberine1-item",
+                    "name": "Berberine",
+                    "quantity": "500 mg"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "meal2",
+              "name": "Comida 2",
+              "entries": [
+                {
+                  "id": "carb2",
+                  "type": "choice",
+                  "label": "Elegir una fuente de hidratos",
+                  "options": [
+                    {
+                      "id": "carb2-o1",
+                      "items": [
+                        {
+                          "id": "carb2-o1-i",
+                          "name": "Pan",
+                          "quantity": "60 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb2-o2",
+                      "items": [
+                        {
+                          "id": "carb2-o2-i",
+                          "name": "Tortas de arroz",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "protein2",
+                  "type": "choice",
+                  "label": "Elegir una fuente de proteína",
+                  "options": [
+                    {
+                      "id": "protein2-o1",
+                      "items": [
+                        {
+                          "id": "protein2-o1-i",
+                          "name": "Lomo embuchado",
+                          "quantity": "100 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein2-o2",
+                      "items": [
+                        {
+                          "id": "protein2-o2-i",
+                          "name": "Jamón",
+                          "quantity": "100 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein2-o3",
+                      "items": [
+                        {
+                          "id": "protein2-o3-i",
+                          "name": "Sardinas",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein2-o4",
+                      "items": [
+                        {
+                          "id": "protein2-o4-i",
+                          "name": "Caballa",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "meal3",
+              "name": "Comida 3",
+              "entries": [
+                {
+                  "id": "carb3",
+                  "type": "choice",
+                  "label": "Elegir una fuente de hidratos",
+                  "options": [
+                    {
+                      "id": "carb3-o1",
+                      "items": [
+                        {
+                          "id": "carb3-o1-i",
+                          "name": "Arroz",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb3-o2",
+                      "items": [
+                        {
+                          "id": "carb3-o2-i",
+                          "name": "Pasta",
+                          "quantity": "50 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb3-o3",
+                      "items": [
+                        {
+                          "id": "carb3-o3-i",
+                          "name": "Patata",
+                          "quantity": "175 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb3-o4",
+                      "items": [
+                        {
+                          "id": "carb3-o4-i",
+                          "name": "Boniato",
+                          "quantity": "175 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "protein3",
+                  "type": "choice",
+                  "label": "Elegir una fuente de proteína",
+                  "options": [
+                    {
+                      "id": "protein3-o1",
+                      "items": [
+                        {
+                          "id": "protein3-o1-i",
+                          "name": "Pollo",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein3-o2",
+                      "items": [
+                        {
+                          "id": "protein3-o2-i",
+                          "name": "Carne roja",
+                          "quantity": "150 g"
+                        }
+                      ],
+                      "notes": "Máximo 2 días por semana"
+                    }
+                  ]
+                },
+                {
+                  "id": "veg3",
+                  "type": "item",
+                  "item": {
+                    "id": "veg3-item",
+                    "name": "Verduras o ensalada",
+                    "quantity": "Cantidad libre",
+                    "notes": "Aliñar con 5 ml de AOVE"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "meal4",
+              "name": "Comida 4",
+              "entries": [
+                {
+                  "id": "protein4",
+                  "type": "choice",
+                  "label": "Elegir una fuente de proteína",
+                  "options": [
+                    {
+                      "id": "protein4-o1",
+                      "items": [
+                        {
+                          "id": "protein4-o1-i",
+                          "name": "Claras",
+                          "quantity": "250 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein4-o2",
+                      "items": [
+                        {
+                          "id": "protein4-o2-i",
+                          "name": "Pollo",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein4-o3",
+                      "items": [
+                        {
+                          "id": "protein4-o3-i",
+                          "name": "Lomo fresco",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "carb4",
+                  "type": "choice",
+                  "label": "Elegir una fuente de hidratos",
+                  "options": [
+                    {
+                      "id": "carb4-o1",
+                      "items": [
+                        {
+                          "id": "carb4-o1-i",
+                          "name": "Avena",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb4-o2",
+                      "items": [
+                        {
+                          "id": "carb4-o2-i",
+                          "name": "Tortas de arroz",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb4-o3",
+                      "items": [
+                        {
+                          "id": "carb4-o3-i",
+                          "name": "Crema de arroz",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "nuts",
+                  "type": "item",
+                  "item": {
+                    "id": "nuts-item",
+                    "name": "Frutos secos",
+                    "quantity": "15 g"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "meal5",
+              "name": "Comida 5",
+              "entries": [
+                {
+                  "id": "protein5",
+                  "type": "choice",
+                  "label": "Elegir una fuente de proteína",
+                  "options": [
+                    {
+                      "id": "protein5-o1",
+                      "items": [
+                        {
+                          "id": "protein5-o1-i",
+                          "name": "Pescado",
+                          "quantity": "200 g"
+                        }
+                      ],
+                      "notes": "Tomar pescado azul 3 días por semana"
+                    },
+                    {
+                      "id": "protein5-o2",
+                      "items": [
+                        {
+                          "id": "protein5-o2-i",
+                          "name": "Lomo fresco",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "protein5-o3",
+                      "items": [
+                        {
+                          "id": "protein5-o3-i",
+                          "name": "Contramuslo",
+                          "quantity": "150 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "veg5",
+                  "type": "item",
+                  "item": {
+                    "id": "veg5-item",
+                    "name": "Verduras o ensalada",
+                    "quantity": "Cantidad libre",
+                    "notes": "Aliñar con 5 ml de aceite de oliva virgen"
+                  }
+                },
+                {
+                  "id": "yogurt",
+                  "type": "item",
+                  "item": {
+                    "id": "yogurt-item",
+                    "name": "Yogur natural",
+                    "quantity": "1 unidad"
+                  }
+                },
+                {
+                  "id": "carb5",
+                  "type": "choice",
+                  "label": "Elegir una fuente de hidratos",
+                  "options": [
+                    {
+                      "id": "carb5-o1",
+                      "items": [
+                        {
+                          "id": "carb5-o1-i",
+                          "name": "Avena",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "carb5-o2",
+                      "items": [
+                        {
+                          "id": "carb5-o2-i",
+                          "name": "Crema de arroz",
+                          "quantity": "30 g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "omega5",
+                  "type": "item",
+                  "item": {
+                    "id": "omega5-item",
+                    "name": "Omega 3",
+                    "quantity": "1 g"
+                  }
+                },
+                {
+                  "id": "q10",
+                  "type": "item",
+                  "item": {
+                    "id": "q10-item",
+                    "name": "Q10",
+                    "quantity": "200 mg"
+                  }
+                },
+                {
+                  "id": "berberine5",
+                  "type": "item",
+                  "item": {
+                    "id": "berberine5-item",
+                    "name": "Berberine",
+                    "quantity": "500 mg"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
